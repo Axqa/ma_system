@@ -1,2 +1,10 @@
 
 log.txt
+
+*.o
+
+*.internal
+
+*.make
+
+*.autosave

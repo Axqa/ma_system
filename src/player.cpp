@@ -30,14 +30,14 @@ Player::Player(WorldModel *wm, ActHandler *act, Formations *fm, string teamName,
 
 void Player::mainLoop()
 {
-//    if(  wm->waitNewInfo() == false )
-//      alive =  false;
+    if(  wm->waitNewInfo() == false )
+      alive =  false;
 
     while (alive)
     {
-        if (wm->getNewInfo() && wm->update(moveType==OBSERVE))
+        if (/*wm->getNewInfo() &&*/ wm->update(moveType==OBSERVE))
         {
-            wm->setNewInfo(false);
+//            wm->setNewInfo(false);
             if (wm->getPlayMode() == PM_BEFORE_KICK_OFF)
             {
                 if (movedToFormationPos == false) {
@@ -72,8 +72,8 @@ void Player::mainLoop()
                 doMove();
             }
         }
-//        if(  wm->waitNewInfo() == false )
-//          alive =  false;
+        if(  wm->waitNewInfo() == false )
+          alive =  false;
     }
 }
 
@@ -95,7 +95,7 @@ void Player::doMove()
 
 void Player::LineMover()
 {
-    if (target == VecPosition() || target.getDistanceTo(wm->getAgent().getAbsPos()) < 5)
+    if (target == VecPosition() || target.getDistanceTo(wm->getAgent().getAbsPos()) < 10)
     {
         srand(fm->getPlayerNum() * (1 + wm->getSide()));
         target = VecPosition((rand() % (int)PITCH_LENGTH) - (int)PITCH_LENGTH/2, (rand() % (int)PITCH_WIDTH) - (int)PITCH_WIDTH/2);

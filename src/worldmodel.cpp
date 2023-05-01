@@ -60,6 +60,7 @@ void WorldModel::show(ostream &os)
     VisiblePlayer *vp;
     int size;
     os << "World model:" << '\n';
+    os << "Time: " << getCurrentTime() << '\n';
     os << "Unknowns " << unknownCount << ":\n";
     for (int i = 0; i < unknownCount; ++i)
     {
@@ -546,7 +547,6 @@ bool WorldModel::processLineInfo(ObjectT line, int time, double dist, int ang)
 bool WorldModel::calculateAllPos(bool needUpdateOther)
 {
     Log.log(2, "Start WorldModel::calculateAllPos");
-
     calculateAgentPos();
 
     if (needUpdateOther)
@@ -558,8 +558,7 @@ bool WorldModel::calculateAllPos(bool needUpdateOther)
 bool WorldModel::calculateAgentPos()
 {
     Log.log(2, "Start WorldModel::calculateAgentPos");
-
-    FixedObject *flag;
+    FixedObject *flag, *curFlag;
     double minDist = 1000, curDist;
     FixedObject *line = lines;
     int maxTime = -1;
@@ -572,17 +571,17 @@ bool WorldModel::calculateAgentPos()
         }
     }
 
-//    for (int i = 0; i < MAX_FLAGS; ++i)
-    for(auto curFlag : viewedFlags)
+//    for(auto curFlag : viewedFlags)
+    for (int i = 0; i < MAX_FLAGS; ++i)
     {
-//        curFlag = &flags[i];
-        if (curFlag.getTime() == getCurrentTime())
+        curFlag = &flags[i];
+        if (curFlag->getTime() == getCurrentTime())
         {
-            curDist = curFlag.getRelPos().getX();
+            curDist = curFlag->getRelPos().getX();
             if (curDist < minDist)
             {
                 minDist = curDist;
-                flag = &curFlag;
+                flag = curFlag;
             }
         }
     }
@@ -666,6 +665,8 @@ bool WorldModel::mapBeforeKickOff()
     VecPosition pos;
     PlayerObject *p;
     int idxInFormation;
+
+    VisiblePlayer *vp;
 
     for (int i = 0; i < unknownCount; ++i)
     {
