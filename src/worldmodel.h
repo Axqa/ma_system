@@ -71,6 +71,8 @@ public:
 
     bool waitNewInfo();
 
+    FixedObject *getLines();
+
     void setAgentNum(int num);
     int getAgentNum();
 
@@ -91,6 +93,8 @@ public:
 
     void   setSenseMessage(char* msg, int time);
     char*  getSenseMessage();
+
+    void   updateFormationToSide();
 
     bool   clearInfo();
     bool   update(bool needMap = false);
@@ -125,9 +129,11 @@ public:
 
     int    findFirstEmptyPlayer(PlayerObject* arr, int count);
     int    findClosestPlayer(PlayerObject* arr, int count, VecPosition pos);
+    int    findClosestUnsurePlayer(PlayerObject* arr, int count, VecPosition pos);
 
     int    findClosestForLastSee(PlayerObject* arr, int count, VecPosition pos);
     bool   mapToClosest(PlayerObject player, PlayerObject* arr, int count);
+    bool   mapToClosestFromAll(PlayerObject player, PlayerObject* arr, int count);
 };
 
 #endif // WORLDMODEL_H

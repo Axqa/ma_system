@@ -60,3 +60,11 @@ bool ActHandler::sendKickCmd(int power, int direction)
     cn->sendMessage(msg);
     return true;
 }
+
+bool ActHandler::sendTurnNeckCmd(int angle)
+{
+    char msg[MAX_MSG];
+    sprintf(msg, "(turn_neck %d)", angle);
+    cn->sendMessage(msg);
+    return true;
+}

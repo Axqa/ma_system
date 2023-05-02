@@ -1267,3 +1267,15 @@ SideT Utility::getSideFromStr( char* str )
   else                     return SIDE_ILLEGAL;
 
 }
+
+bool equal(double v1, double v2)
+{
+    if (abs(v1- v2) < EPSILON) return true;
+
+    return false;
+}
+
+bool equal(VecPosition v1, VecPosition v2)
+{
+    return equal(v1.getX(), v2.getX()) && equal(v1.getY(), v2.getY());
+}

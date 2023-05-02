@@ -40,6 +40,8 @@ const double  UnknownDoubleValue  = -1000.0; /*!< indicates unknown double   */
 const AngDeg  UnknownAngleValue   = -1000.0; /*!< indicates unknown angle    */
 
 #define EPSILON 0.0001  /*!< Value used for floating point equality tests. */
+#define MIN_DIST 0.01   /*!< Value used for minimum distance in division.  */
+class VecPosition;
 
 // auxiliary numeric functions for determining the
 // maximum and minimum of two given double values and the sign of a value
@@ -47,6 +49,8 @@ double max     ( double d1, double d2 );
 double min     ( double d1, double d2 );
 int    sign    ( double d1            );
 
+bool equal      (double v1, double v2);
+bool equal      (VecPosition v1, VecPosition v2);
 
 // auxiliary goniometric functions which enable you to
 // specify angles in degrees rather than in radians

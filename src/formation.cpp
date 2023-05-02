@@ -2,7 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include "parser.h"
-
+#include <unistd.h>
 using namespace std;
 
 FormationInfo::FormationInfo()
@@ -66,6 +66,9 @@ Formations::Formations(const char* filename, int playerNum)
         cerr << "Error while reading formation file " << filename << endl;
     }
     formationIndex = 0;
+
+    // wait to set right order of players
+    usleep(playerNum * 500000);
 }
 
 void Formations::show( ostream &os )
@@ -116,6 +119,8 @@ bool Formations::readFile(const char *filename)
     }
 
     in.close();
+
+
     return ret;
 }
 

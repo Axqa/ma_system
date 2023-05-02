@@ -108,6 +108,8 @@ bool MessageHandler::analyzeInitMessage( char *msg )
   wm->setAgentNum( nr );
   msg++;                                               // skip space to pm
   wm->setPlayMode( SoccerTypes::getPlayModeFromStr( msg ) ); // get playmode
+
+  wm->updateFormationToSide();
   return true;
 }
 

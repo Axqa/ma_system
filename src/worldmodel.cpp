@@ -27,11 +27,12 @@ WorldModel::WorldModel(Formations *fm)
     for (int i = 0; i < MAX_FLAGS; ++i)
     {
         flags[i].setType(SoccerTypes::getFlagFromIndex(i));
+        flags[i].setTime(-1);
     }
     for (int i = 0; i < MAX_LINES; ++i)
     {
         lines[i].setType(SoccerTypes::getLineFromIndex(i));
-
+        lines[i].setTime(-1);
     }
 
     for (int i = 0; i < MAX_TEAMMATES; ++i)
@@ -61,17 +62,18 @@ void WorldModel::show(ostream &os)
     int size;
     os << "World model:" << '\n';
     os << "Time: " << getCurrentTime() << '\n';
+    os << "Play mode: " << SoccerTypes::getPlayModeStr(getPlayMode()) << "\n";
     os << "Unknowns " << unknownCount << ":\n";
-    for (int i = 0; i < unknownCount; ++i)
-    {
-        p = &unknownPlayers[i];
-        vp = &(p->getHistory().getLast());
-        os << "Unknown " << i << " | ";
-        os << " Side: " << SoccerTypes::getSideStr( p->getSide()) << " | ";
-        os << " Num: " << p->getUnum() << '\n';
-        os << " Last Pos: " << vp->getAbsPos() << '\n';
+//    for (int i = 0; i < unknownCount; ++i)
+//    {
+//        p = &unknownPlayers[i];
+//        vp = &(p->getHistory().getLast());
+//        os << "Unknown " << i << " | ";
+//        os << " Side: " << SoccerTypes::getSideStr( p->getSide()) << " | ";
+//        os << " Num: " << p->getUnum() << '\n';
+//        os << " Last Pos: " << vp->getAbsPos() << '\n';
 
-    }
+//    }
     os << "\nTeammates: " << "\n";
     for (int i = 0; i < MAX_TEAMMATES; ++i)
     {
@@ -117,6 +119,7 @@ void WorldModel::showAgent(ostream &os)
           "\nUnum: " << agent.getUnum() <<
           "\nAbs pos: " << agent.getAbsPos() <<
           "\nAbs Neck angle: " << agent.getAbsNeckAngle() <<
+          "\nAbs Body angle: " << agent.getAbsBodyAngle() <<
           "\nNeck to body angle: " << agent.getNeckToBodyAngle() << endl;
 }
 
@@ -162,6 +165,11 @@ bool WorldModel::waitNewInfo()
     newInfo = false;
 
     return bReturn;
+}
+
+FixedObject *WorldModel::getLines()
+{
+    return lines;
 }
 
 void WorldModel::setAgentNum(int num)
@@ -265,6 +273,11 @@ char *WorldModel::getSenseMessage()
     return lastSenseMsg;
 }
 
+void WorldModel::updateFormationToSide()
+{
+
+}
+
 bool WorldModel::clearInfo()
 {
     unknownCount = 0;
@@ -309,7 +322,10 @@ bool WorldModel::update(bool needMap)
         calculateAllPos(needMap);
 
         if (needMap)
+        {
             mapUnknownPlayers();
+            show(Log.getOutputStream());
+        }
     }
     else
     {
@@ -598,6 +614,7 @@ bool WorldModel::calculateAgentPos()
 
     agent.setAbsPos(agentPos);
 
+    agent.setAbsBodyAngle(globalNeckAngle + agent.getNeckToBodyAngle());
 //    extraInfo.str(std::string());
 //    extraInfo.clear();
 
@@ -646,10 +663,6 @@ void WorldModel::updateAllUnknown()
 
 bool WorldModel::mapUnknownPlayers()
 {
-
-    VecPosition pos;
-    PlayerObject *p;
-
     if (getPlayMode() == PM_BEFORE_KICK_OFF)
     {
         return mapBeforeKickOff();
@@ -662,18 +675,20 @@ bool WorldModel::mapBeforeKickOff()
 {
     Log.log(2, "Start WorldModel::mapBeforeKickOff");
 
+
     VecPosition pos;
     PlayerObject *p;
     int idxInFormation;
 
     VisiblePlayer *vp;
 
+    // map only known players first
     for (int i = 0; i < unknownCount; ++i)
     {
         p = &unknownPlayers[i];
         VisiblePlayer &vp = p->getLastVision();
-        vp.setTeamConf(1); // always can determine side of player
 
+        vp.setTeamConf(1); // always can determine side of player
         if (p->getSide() == SIDE_ILLEGAL)
         {
             if (p->getLastVision().getAbsPos().getX() < 0)
@@ -688,31 +703,29 @@ bool WorldModel::mapBeforeKickOff()
 
         if (p->getSide() == getSide()) // teammate
         {
+            vp.setUnumConf(1);
             vp.setAbsPos(fm->getFormation(fm->getFormationIndex()).getNearestPosInFormation(vp.getAbsPos(), &idxInFormation));
             teammates[idxInFormation].addVision(vp);
+            continue;
         }
-        else // opponent
+
+        if (p->getUnum() == -1)
+            continue;
+
+        vp.setUnumConf(1);
+        opponents[p->getUnum() - 1].addVision(vp);
+
+    }
+
+    // determine unknown opponents
+    for (int i = 0; i < unknownCount; ++i)
+    {
+        p = &unknownPlayers[i];
+        VisiblePlayer &vp = p->getLastVision();
+
+        if (p->getSide() != getSide() && p->getUnum() == -1) // opponent
         {
-            if (p->getUnum() != -1) // known player
-            {
-                vp.setUnumConf(1);
-                if (opponents[p->getUnum() - 1].getLastSeeTime() != -1 && opponents[p->getUnum() - 1].getLastVision().getUnumConf() == 0)
-                { // if we previously set unknown player as this, then set prev vision as unknown again
-                    VisiblePlayer &oldVp = opponents[p->getUnum() - 1].getLastVision();
-
-                    opponents[p->getUnum() - 1].addVision(vp);
-
-                    decideUnknownOpponentBeforeKickOff(oldVp);
-                }
-                else
-                {
-                    opponents[p->getUnum() - 1].addVision(vp);
-                }
-            }
-            else // opponent's num undefined
-            {
-                decideUnknownOpponentBeforeKickOff(vp);
-            }
+            decideUnknownOpponentBeforeKickOff(vp);
         }
 
     }
@@ -723,7 +736,7 @@ bool WorldModel::mapBeforeKickOff()
 
 void WorldModel::decideUnknownOpponentBeforeKickOff(VisiblePlayer &vp)
 {
-    int firstEmpty, closest;
+    int firstEmpty, closest, closestUnsure;
 
     closest = findClosestPlayer(opponents, MAX_OPPONENTS, vp.getAbsPos());
     if (closest != -1 && opponents[closest].getLastVision().getAbsPos().getDistanceTo(vp.getAbsPos()) < EPSILON)
@@ -740,9 +753,19 @@ void WorldModel::decideUnknownOpponentBeforeKickOff(VisiblePlayer &vp)
         {
             opponents[firstEmpty].addVision(vp);
         }
-        else // no empty spots, add to nearest if it not same
+        else // no empty spots, add to nearest
         {
-            opponents[closest].addVision(vp);
+            closestUnsure = findClosestUnsurePlayer(opponents, MAX_OPPONENTS, vp.getAbsPos());
+            if (closestUnsure != -1)
+            {
+                opponents[closestUnsure].addVision(vp);
+
+            }
+            else
+            {
+                opponents[closest].addVision(vp);
+
+            }
         }
     }
 }
@@ -764,6 +787,26 @@ int WorldModel::findClosestPlayer(PlayerObject *arr, int count, VecPosition pos)
     for (int i = 0; i < count; ++i)
     {
         if (arr[i].getHistory().getSize() == 0) continue;
+        curDist = pos.getDistanceTo(arr[i].getLastVision().getAbsPos());
+        if (curDist < minDist)
+        {
+            minDist = curDist;
+            curClosest = i;
+        }
+    }
+
+    return curClosest;
+}
+
+int WorldModel::findClosestUnsurePlayer(PlayerObject *arr, int count, VecPosition pos)
+{
+    int curClosest = -1;
+    double minDist = 1000, curDist;
+    for (int i = 0; i < count; ++i)
+    {
+        if (arr[i].getHistory().getSize() == 0) continue;
+        if (equal(arr[i].getLastVision().getUnumConf(), 1)) continue;
+
         curDist = pos.getDistanceTo(arr[i].getLastVision().getAbsPos());
         if (curDist < minDist)
         {

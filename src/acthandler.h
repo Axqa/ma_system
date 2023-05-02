@@ -20,6 +20,7 @@ public:
     bool sendTurnCmd(int angle);
     bool sendDashCmd(int power);
     bool sendKickCmd(int power, int direction);
+    bool sendTurnNeckCmd(int angle);
 };
 
 #endif // ACTHANDLER_H

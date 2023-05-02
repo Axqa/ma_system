@@ -4,9 +4,13 @@
 #include <cstdio>
 #include "soccertypes.h"
 #include <sys/time.h>
+#include "logger.h"
+
+extern Logger Log;
 
 bool WorldModel::mapInGame()
 {
+
     VecPosition pos;
     PlayerObject *p;
 
@@ -75,7 +79,7 @@ bool WorldModel::mapUnsure()
 
     for (auto p : listUnsureAll)
     {
-        res &= mapToClosest(p, teammates, MAX_TEAMMATES+MAX_OPPONENTS);
+        res &= mapToClosestFromAll(p, teammates, MAX_TEAMMATES+MAX_OPPONENTS);
     }
     return res;
 }
@@ -103,10 +107,9 @@ bool WorldModel::mapOpponents()
 
 bool   WorldModel::mapToClosest(PlayerObject player, PlayerObject* arr, int count)
 {
-    double sum = 0, e, dist, minDist = 1000;
+    double sum = 0, e = 0, minE = 0, dist, minDist = 1000;
     int minIdx = -1;
     VecPosition pos;
-
     VisiblePlayer vp = player.getLastVision();
     VecPosition playerPos = vp.getAbsPos();
     for (int i = 0; i < count; ++i)
@@ -116,12 +119,14 @@ bool   WorldModel::mapToClosest(PlayerObject player, PlayerObject* arr, int coun
 
         dist = pos.getDistanceTo(playerPos);
 
-        dist = max(dist, EPSILON);
+        dist = max(dist, MIN_DIST);
+
+        e = exp(1/dist);
+        sum += e;
 
         if (dist < minDist)
         {
-            e = exp(1/dist);
-            sum += e;
+            minE = e;
             minIdx = i;
             minDist = dist;
         }
@@ -129,7 +134,49 @@ bool   WorldModel::mapToClosest(PlayerObject player, PlayerObject* arr, int coun
 
     if (minIdx == -1) return false;
 
-    vp.setUnumConf(e / sum);
+    vp.setUnumConf(minE / max(sum, MIN_DIST));
+    arr[minIdx].addVision(vp);
+
+    return true;
+}
+
+bool WorldModel::mapToClosestFromAll(PlayerObject player, PlayerObject *arr, int count)
+{
+    double sum = 0, e = 0, minE = 0, dist, minDist = 1000;
+    int minIdx = -1;
+    VecPosition pos;
+    double t1 = 0, t2 = 0;
+    VisiblePlayer vp = player.getLastVision();
+    VecPosition playerPos = vp.getAbsPos();
+    for (int i = 0; i < count; ++i)
+    {
+        if (arr[i].getLastSeeTime() == getCurrentTime()) continue;
+        pos = arr[i].getLastVision().getAbsPos();
+
+        dist = pos.getDistanceTo(playerPos);
+
+        dist = max(dist, MIN_DIST);
+
+        e = exp(1/dist);
+        sum += e;
+
+        if (i < count / 2)
+            t1 += e;
+        else
+            t2 += e;
+
+        if (dist < minDist)
+        {
+            minE = e;
+            minIdx = i;
+            minDist = dist;
+        }
+    }
+
+    if (minIdx == -1) return false;
+
+    vp.setTeamConf(minIdx < count/2 ? t1 / (t1+t2) : t2 / (t1+t2));
+    vp.setUnumConf(minE / max(sum, MIN_DIST));
     arr[minIdx].addVision(vp);
 
     return true;

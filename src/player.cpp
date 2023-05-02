@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include "soccertypes.h"
 
 extern Logger Log;
 
@@ -38,9 +39,20 @@ void Player::mainLoop()
         if (/*wm->getNewInfo() &&*/ wm->update(moveType==OBSERVE))
         {
 //            wm->setNewInfo(false);
+
             if (wm->getPlayMode() == PM_BEFORE_KICK_OFF)
             {
+
                 if (movedToFormationPos == false) {
+                    if (wm->getSide() == SIDE_LEFT && wm->getCurrentTime() == 0)
+                    {
+                        fm->setFormationIndex(0);
+                    }
+                    else
+                    {
+                        fm->setFormationIndex(1);
+                    }
+
                     act->sendMoveCmd(fm->getAgentPos());
                     movedToFormationPos = true;
                     continue;
@@ -52,10 +64,29 @@ void Player::mainLoop()
                     continue;
                 }
 
-                if (abs(wm->getAgent().getAbsNeckAngle()) > EPSILON)
+                if (abs(wm->getAgent().getAbsBodyAngle()) > EPSILON)
                 {
-                    act->sendTurnCmd(-wm->getAgent().getAbsNeckAngle());
+                    act->sendTurnCmd(-wm->getAgent().getAbsBodyAngle());
                     continue;
+                }
+
+                static int cycle = 0;
+                switch (cycle) {
+                case 0:
+                    act->sendTurnNeckCmd(-90);
+                    cycle++;
+                    break;
+                case 1:
+                    act->sendTurnNeckCmd(180);
+                    cycle++;
+                    break;
+                case 2:
+                    act->sendTurnNeckCmd(-90);
+                    cycle++;
+                    break;
+                default:
+                    break;
+
                 }
             }
             else if ((wm->getPlayMode() == PM_KICK_OFF_LEFT && wm->getSide() == SIDE_LEFT) ||
@@ -63,12 +94,13 @@ void Player::mainLoop()
             {
                 if (fm->getPlayerNum() == 9) // assume 9 player always kick off ball
                 {   // weakly kick ball
-                    act->sendKickCmd(10, 0);
+                    act->sendKickCmd(100, 0);
                     continue;
                 }
             }
             else
             {
+                movedToFormationPos = false;
                 doMove();
             }
         }
@@ -82,6 +114,7 @@ void Player::doMove()
     switch (moveType)
     {
     case OBSERVE:
+//        observeMover();
         break;
 
     case LINE:
@@ -97,9 +130,9 @@ void Player::LineMover()
 {
     if (target == VecPosition() || target.getDistanceTo(wm->getAgent().getAbsPos()) < 10)
     {
-        srand(fm->getPlayerNum() * (1 + wm->getSide()));
         target = VecPosition((rand() % (int)PITCH_LENGTH) - (int)PITCH_LENGTH/2, (rand() % (int)PITCH_WIDTH) - (int)PITCH_WIDTH/2);
     }
+
     // We do not turning neck, so global neck angle == global body angle
     VecPosition dir = target - wm->getAgent().getAbsPos();
     AngDeg angToTarget = atan2Deg(dir.getY(), dir.getX());
@@ -114,6 +147,54 @@ void Player::LineMover()
     return;
 }
 
+void Player::observeMover()
+{
+    static bool lookRight = false;
+    static int curAngle = 0;
+    AngDeg absTargetAngle;
+
+//    absTargetAngle = getBisectorTwoAngles()
+    FixedObject *line = nullptr;
+    for(int i = 0; i < MAX_LINES; ++i)
+    {
+        // we dont move so line info should be same for all time
+        if (wm->getLines()[i].getTime() != -1 && (line == nullptr || (wm->getLines()[i].getRelPos().getX() < line->getRelPos().getX())))
+        {
+            line = &wm->getLines()[i];
+        }
+    }
+
+    absTargetAngle = SoccerTypes::getGlobalAngleLine(line->getType(), wm->getSide());
+
+    AngDeg viewAngle = SoccerTypes::getHalfViewAngleValue(wm->getAgent().getViewAngle()) * 2;
+
+    if (!equal(wm->getAgent().getAbsBodyAngle(), absTargetAngle))
+    {
+        act->sendTurnCmd(absTargetAngle - wm->getAgent().getAbsBodyAngle());
+        return;
+    }
+
+
+
+    if (equal(wm->getAgent().getNeckToBodyAngle(), 0) )
+    {
+        act->sendTurnNeckCmd(90);
+        lookRight = true;
+        return;
+    }
+    if (lookRight)
+    {
+        act->sendTurnNeckCmd(-180);
+        lookRight = false;
+    }
+    else
+    {
+        act->sendTurnNeckCmd(180);
+        lookRight = true;
+    }
+
+}
+
 void Player::handleStdin()
 {
     char buf[MAX_MSG];
@@ -126,7 +207,12 @@ void Player::handleStdin()
       if (buf[0] != '\0')
       {
          printf( "Get command: %s\n", buf );
-         executeStringCommand( buf );
+         try {
+             executeStringCommand( buf );
+
+         } catch (exception e) {
+             cout << "Error in handling input: " << e.what() << endl;
+         }
       }
     }
 }

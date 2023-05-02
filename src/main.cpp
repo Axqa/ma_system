@@ -80,7 +80,8 @@ int main(int argc, char * argv[])
     {
         os.open(logFile);
         Log.setOutputStream(os);
-        Log.setLogAll(true);
+//        Log.setLogAll(true);
+        Log.addLogLevel(3);
     }
 
     Formations fm(formationFile.data(), playerUnum);
@@ -91,6 +92,8 @@ int main(int argc, char * argv[])
     MessageHandler mh(&wm, &cn);
 
     Player player(&wm, &act, &fm, teamName, 17, moveType);
+
+    srand(fm.getPlayerNum() * (1 + wm.getSide()));
 
     pthread_create( &msgs, NULL, message_callback, &mh);        // start message handling
 

@@ -33,6 +33,7 @@ public:
     void mainLoop();
     void doMove();
     void LineMover();
+    void observeMover();
 
     void handleStdin();
     void executeStringCommand(char* cmd);
