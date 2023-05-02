@@ -9,6 +9,7 @@
 #include <sstream>
 #include <vector>
 #include <list>
+#include "playermapper.h"
 
 using namespace std;
 
@@ -18,13 +19,14 @@ class WorldModel
     pthread_cond_t   cond_newInfo;        /*!< cond variable for newInfo      */
 
     Formations *fm;
+    PlayerMapper *pm;
 
     string teamName;
 
     Agent agent;
 
-        PlayerObject teammates[MAX_TEAMMATES];
-        PlayerObject opponents[MAX_OPPONENTS];
+    PlayerObject teammates[MAX_TEAMMATES];
+    PlayerObject opponents[MAX_OPPONENTS];
 
 
     PlayerObject unknownPlayers[MAX_TEAMMATES + MAX_OPPONENTS];
@@ -59,13 +61,14 @@ class WorldModel
 
     std::ostringstream extraInfo;
 public:
-    WorldModel(Formations *fm);
+    WorldModel(Formations *fm, PlayerMapper* pm);
 
     void show(ostream &os = cout);
     void showAgent(ostream &os = cout);
     string getExtraInfo();
 
     int getCurrentTime();
+    void setCurrentTime(int time);
 
     Agent &getAgent();
 
@@ -119,21 +122,7 @@ public:
     void   updateAllUnknown();
 
     bool   mapUnknownPlayers();
-    bool   mapBeforeKickOff();
-    bool   mapInGame();
-    bool   mapTeammates();
-    bool   mapOpponents();
-    bool   mapUnsure();
 
-    void   decideUnknownOpponentBeforeKickOff(VisiblePlayer &vp);
-
-    int    findFirstEmptyPlayer(PlayerObject* arr, int count);
-    int    findClosestPlayer(PlayerObject* arr, int count, VecPosition pos);
-    int    findClosestUnsurePlayer(PlayerObject* arr, int count, VecPosition pos);
-
-    int    findClosestForLastSee(PlayerObject* arr, int count, VecPosition pos);
-    bool   mapToClosest(PlayerObject player, PlayerObject* arr, int count);
-    bool   mapToClosestFromAll(PlayerObject player, PlayerObject* arr, int count);
 };
 
 #endif // WORLDMODEL_H

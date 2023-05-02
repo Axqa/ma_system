@@ -31,7 +31,8 @@ set(SOURCES
   src/formation.h
   src/soccertypes.cpp
   src/soccertypes.h
-  src/worldmodelmapping.cpp
+  src/playermapper.cpp
+  src/playermapper.h
   )
 
 set(OTHER

@@ -9,7 +9,7 @@
 #include "player.h"
 #include "formation.h"
 #include <cstring>
-
+#include "playermapper.h"
 
 extern Logger Log;
 
@@ -84,9 +84,10 @@ int main(int argc, char * argv[])
         Log.addLogLevel(3);
     }
 
+    ClosestMapper pm;
     Formations fm(formationFile.data(), playerUnum);
     Connection cn(host.data(), port, MAX_MSG);
-    WorldModel wm(&fm);
+    WorldModel wm(&fm, &pm);
     ActHandler act(&cn, &wm);
 
     MessageHandler mh(&wm, &cn);

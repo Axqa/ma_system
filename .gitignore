@@ -10,3 +10,9 @@ log.txt
 *.autosave
 
 *.d
+
+build/Makefile
+
+build/CMakeFiles/player.dir/link.txt
+
+*.cmake

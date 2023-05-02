@@ -8,8 +8,8 @@
 
 extern Logger Log;
 
-WorldModel::WorldModel(Formations *fm)
-    : fm(fm)
+WorldModel::WorldModel(Formations *fm, PlayerMapper* pm)
+    : fm(fm), pm(pm)
 {
     pthread_mutex_init( &mutex_newInfo, NULL );
     pthread_cond_init ( &cond_newInfo,  NULL );
@@ -53,6 +53,12 @@ WorldModel::WorldModel(Formations *fm)
     {
         opponents[i].setUnum(i+1);
     }
+
+    pm->init(fm,
+             &agent,
+             teammates,
+             opponents,
+             unknownPlayers);
 }
 
 void WorldModel::show(ostream &os)
@@ -133,6 +139,13 @@ int WorldModel::getCurrentTime()
     return lastSeeTime;
 }
 
+void WorldModel::setCurrentTime(int time)
+{
+    lastSeeTime = time;
+
+    pm->setCurrentTime(time);
+}
+
 Agent &WorldModel::getAgent()
 {
     return agent;
@@ -202,6 +215,8 @@ void WorldModel::setSide(SideT s)
     {
         opponents[i].setSide(s == SIDE_LEFT ? SIDE_RIGHT : SIDE_LEFT);
     }
+
+    pm->setSide(s);
 }
 
 string WorldModel::getTeamName()
@@ -240,7 +255,7 @@ void WorldModel::setSeeMessage(char *msg, int time)
     strcpy(lastSeeMsg, msg);
 //    if (time != lastSeeTime)
 
-    lastSeeTime = time;
+    setCurrentTime(time);
 
     newSeeInfo = true;
 
@@ -345,7 +360,7 @@ bool WorldModel::processLastSeeMsg()
     AngDeg  angBodyFacingDir, angHeadFacingDir;
     bool    isGoalie, isTackling, isKicking;
     ObjectT o;
-    int time = lastSeeTime;
+    int time = getCurrentTime();
 
     Parse::parseFirstInt(&str); // skip time
 
@@ -665,155 +680,8 @@ bool WorldModel::mapUnknownPlayers()
 {
     if (getPlayMode() == PM_BEFORE_KICK_OFF)
     {
-        return mapBeforeKickOff();
+        return pm->mapBeforeKickOff(unknownCount);
     }
 
-    return mapInGame();
-}
-
-bool WorldModel::mapBeforeKickOff()
-{
-    Log.log(2, "Start WorldModel::mapBeforeKickOff");
-
-
-    VecPosition pos;
-    PlayerObject *p;
-    int idxInFormation;
-
-    VisiblePlayer *vp;
-
-    // map only known players first
-    for (int i = 0; i < unknownCount; ++i)
-    {
-        p = &unknownPlayers[i];
-        VisiblePlayer &vp = p->getLastVision();
-
-        vp.setTeamConf(1); // always can determine side of player
-        if (p->getSide() == SIDE_ILLEGAL)
-        {
-            if (p->getLastVision().getAbsPos().getX() < 0)
-            { // teammate
-                p->setSide(getSide());
-            }
-            else
-            { // opponent
-                p->setSide(getSide() == SIDE_LEFT ? SIDE_RIGHT : SIDE_LEFT);
-            }
-        }
-
-        if (p->getSide() == getSide()) // teammate
-        {
-            vp.setUnumConf(1);
-            vp.setAbsPos(fm->getFormation(fm->getFormationIndex()).getNearestPosInFormation(vp.getAbsPos(), &idxInFormation));
-            teammates[idxInFormation].addVision(vp);
-            continue;
-        }
-
-        if (p->getUnum() == -1)
-            continue;
-
-        vp.setUnumConf(1);
-        opponents[p->getUnum() - 1].addVision(vp);
-
-    }
-
-    // determine unknown opponents
-    for (int i = 0; i < unknownCount; ++i)
-    {
-        p = &unknownPlayers[i];
-        VisiblePlayer &vp = p->getLastVision();
-
-        if (p->getSide() != getSide() && p->getUnum() == -1) // opponent
-        {
-            decideUnknownOpponentBeforeKickOff(vp);
-        }
-
-    }
-    Log.log(2, "End WorldModel::mapBeforeKickOff");
-
-    return true;
-}
-
-void WorldModel::decideUnknownOpponentBeforeKickOff(VisiblePlayer &vp)
-{
-    int firstEmpty, closest, closestUnsure;
-
-    closest = findClosestPlayer(opponents, MAX_OPPONENTS, vp.getAbsPos());
-    if (closest != -1 && opponents[closest].getLastVision().getAbsPos().getDistanceTo(vp.getAbsPos()) < EPSILON)
-    {   // same player
-        vp.setUnumConf(opponents[closest].getLastVision().getUnumConf());
-        opponents[closest].addVision(vp);
-    }
-    else
-    {
-        firstEmpty = findFirstEmptyPlayer(opponents, MAX_OPPONENTS);
-
-        // maybe new player, add to empty
-        if (firstEmpty != -1)
-        {
-            opponents[firstEmpty].addVision(vp);
-        }
-        else // no empty spots, add to nearest
-        {
-            closestUnsure = findClosestUnsurePlayer(opponents, MAX_OPPONENTS, vp.getAbsPos());
-            if (closestUnsure != -1)
-            {
-                opponents[closestUnsure].addVision(vp);
-
-            }
-            else
-            {
-                opponents[closest].addVision(vp);
-
-            }
-        }
-    }
-}
-
-int WorldModel::findFirstEmptyPlayer(PlayerObject *arr, int count)
-{
-    for (int i = 0; i < count; ++i)
-    {
-        if (arr[i].getLastSeeTime() == -1) return i;
-    }
-    return -1;
-}
-
-
-int WorldModel::findClosestPlayer(PlayerObject *arr, int count, VecPosition pos)
-{
-    int curClosest = -1;
-    double minDist = 1000, curDist;
-    for (int i = 0; i < count; ++i)
-    {
-        if (arr[i].getHistory().getSize() == 0) continue;
-        curDist = pos.getDistanceTo(arr[i].getLastVision().getAbsPos());
-        if (curDist < minDist)
-        {
-            minDist = curDist;
-            curClosest = i;
-        }
-    }
-
-    return curClosest;
-}
-
-int WorldModel::findClosestUnsurePlayer(PlayerObject *arr, int count, VecPosition pos)
-{
-    int curClosest = -1;
-    double minDist = 1000, curDist;
-    for (int i = 0; i < count; ++i)
-    {
-        if (arr[i].getHistory().getSize() == 0) continue;
-        if (equal(arr[i].getLastVision().getUnumConf(), 1)) continue;
-
-        curDist = pos.getDistanceTo(arr[i].getLastVision().getAbsPos());
-        if (curDist < minDist)
-        {
-            minDist = curDist;
-            curClosest = i;
-        }
-    }
-
-    return curClosest;
+    return pm->mapInGame(unknownCount);
 }

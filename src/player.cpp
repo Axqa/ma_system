@@ -114,7 +114,7 @@ void Player::doMove()
     switch (moveType)
     {
     case OBSERVE:
-//        observeMover();
+        observeMover();
         break;
 
     case LINE:
@@ -150,29 +150,29 @@ void Player::LineMover()
 void Player::observeMover()
 {
     static bool lookRight = false;
-    static int curAngle = 0;
-    AngDeg absTargetAngle;
+//    static int curAngle = 0;
+//    AngDeg absTargetAngle;
 
-//    absTargetAngle = getBisectorTwoAngles()
-    FixedObject *line = nullptr;
-    for(int i = 0; i < MAX_LINES; ++i)
-    {
-        // we dont move so line info should be same for all time
-        if (wm->getLines()[i].getTime() != -1 && (line == nullptr || (wm->getLines()[i].getRelPos().getX() < line->getRelPos().getX())))
-        {
-            line = &wm->getLines()[i];
-        }
-    }
+////    absTargetAngle = getBisectorTwoAngles()
+//    FixedObject *line = nullptr;
+//    for(int i = 0; i < MAX_LINES; ++i)
+//    {
+//        // we dont move so line info should be same for all time
+//        if (wm->getLines()[i].getTime() != -1 && (line == nullptr || (wm->getLines()[i].getRelPos().getX() < line->getRelPos().getX())))
+//        {
+//            line = &wm->getLines()[i];
+//        }
+//    }
 
-    absTargetAngle = SoccerTypes::getGlobalAngleLine(line->getType(), wm->getSide());
+//    absTargetAngle = SoccerTypes::getGlobalAngleLine(line->getType(), wm->getSide());
 
-    AngDeg viewAngle = SoccerTypes::getHalfViewAngleValue(wm->getAgent().getViewAngle()) * 2;
+//    AngDeg viewAngle = SoccerTypes::getHalfViewAngleValue(wm->getAgent().getViewAngle()) * 2;
 
-    if (!equal(wm->getAgent().getAbsBodyAngle(), absTargetAngle))
-    {
-        act->sendTurnCmd(absTargetAngle - wm->getAgent().getAbsBodyAngle());
-        return;
-    }
+//    if (!equal(wm->getAgent().getAbsBodyAngle(), absTargetAngle))
+//    {
+//        act->sendTurnCmd(absTargetAngle - wm->getAgent().getAbsBodyAngle());
+//        return;
+//    }
 
 
 
