@@ -81,10 +81,11 @@ int main(int argc, char * argv[])
         os.open(logFile);
         Log.setOutputStream(os);
 //        Log.setLogAll(true);
-        Log.addLogLevel(3);
+        Log.addLogLevel(4);
     }
 
-    ClosestMapper pm;
+//    ClosestMapper pm;
+    MinSumMapper pm;
     Formations fm(formationFile.data(), playerUnum);
     Connection cn(host.data(), port, MAX_MSG);
     WorldModel wm(&fm, &pm);

@@ -1279,3 +1279,8 @@ bool equal(VecPosition v1, VecPosition v2)
 {
     return equal(v1.getX(), v2.getX()) && equal(v1.getY(), v2.getY());
 }
+
+bool vecInField(VecPosition pos)
+{
+    return abs(pos.getX()) <= PITCH_LENGTH/2 && abs(pos.getY()) <= PITCH_WIDTH/2;
+}

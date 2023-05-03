@@ -1065,7 +1065,7 @@ const char* SoccerTypes::getSideStr( SideT s )
   {
     case SIDE_LEFT:    return "l";
     case SIDE_RIGHT:   return "r";
-    case SIDE_ILLEGAL:
+    case SIDE_ILLEGAL: return "?";
     default:           return NULL;
   }
 }

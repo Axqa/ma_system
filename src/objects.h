@@ -93,11 +93,13 @@ public:
     void    setSide(SideT s);
     bool    getIsGoalie();
     void    setIsGoalie(bool goalie);
+
 };
 
 class PlayerObject : public PlayerInfo {
     History history;    /*!< Vision history */
 
+    VecPosition predictedPos;  /*!< Predicted position of player */
 public:
     PlayerObject(int maxHistory = HISTORY_SIZE);
 
@@ -110,6 +112,8 @@ public:
 
     void addVision(VisiblePlayer vp);
 
+    VecPosition getPredictedPos();
+    void setPredictedPos(VecPosition pos);
 };
 
 class Agent : public Object, public PlayerInfo {

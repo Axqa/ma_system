@@ -174,6 +174,16 @@ void PlayerObject::addVision(VisiblePlayer vp)
     history.addEntry(vp);
 }
 
+VecPosition PlayerObject::getPredictedPos()
+{
+    return predictedPos;
+}
+
+void PlayerObject::setPredictedPos(VecPosition pos)
+{
+    predictedPos = pos;
+}
+
 AngDeg VisiblePlayer::getRelBodyAngle()
 {
     return relBodyAngle;

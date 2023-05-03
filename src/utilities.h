@@ -68,6 +68,7 @@ AngDeg asinDeg ( double x             );
 bool   isAngInInterval     ( AngDeg ang,    AngDeg angMin,    AngDeg angMax );
 AngDeg getBisectorTwoAngles( AngDeg angMin, AngDeg angMax );
 
+bool   vecInField(VecPosition pos);
 
 class VecPosition
 {

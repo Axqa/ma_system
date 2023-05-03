@@ -306,7 +306,8 @@ enum ObjectT { // don't change order
 enum MoveT {
     OBSERVE,
     LINE,
-    SQUARE
+    NO_MOVE,
+    NO_MOVE_OBSERVE
 };
 
 #endif // ENUMS_H

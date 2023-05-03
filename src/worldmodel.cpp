@@ -20,9 +20,6 @@ WorldModel::WorldModel(Formations *fm, PlayerMapper* pm)
     teamName = "";
     playMode = PM_BEFORE_KICK_OFF;
 
-    unsureAll.reserve(MAX_TEAMMATES + MAX_OPPONENTS);
-    unsureOpponents.reserve(MAX_OPPONENTS);
-    unsureTeammates.reserve(MAX_TEAMMATES);
 
     for (int i = 0; i < MAX_FLAGS; ++i)
     {
@@ -70,16 +67,16 @@ void WorldModel::show(ostream &os)
     os << "Time: " << getCurrentTime() << '\n';
     os << "Play mode: " << SoccerTypes::getPlayModeStr(getPlayMode()) << "\n";
     os << "Unknowns " << unknownCount << ":\n";
-//    for (int i = 0; i < unknownCount; ++i)
-//    {
-//        p = &unknownPlayers[i];
-//        vp = &(p->getHistory().getLast());
-//        os << "Unknown " << i << " | ";
-//        os << " Side: " << SoccerTypes::getSideStr( p->getSide()) << " | ";
-//        os << " Num: " << p->getUnum() << '\n';
-//        os << " Last Pos: " << vp->getAbsPos() << '\n';
+    for (int i = 0; i < unknownCount; ++i)
+    {
+        p = &unknownPlayers[i];
+        vp = &(p->getHistory().getLast());
+        os << "Unknown " << i << " | ";
+        os << " Side: " << SoccerTypes::getSideStr( p->getSide()) << " | ";
+        os << " Num: " << p->getUnum() << " | ";
+        os << " Last Pos: " << vp->getAbsPos() << '\n';
 
-//    }
+    }
     os << "\nTeammates: " << "\n";
     for (int i = 0; i < MAX_TEAMMATES; ++i)
     {
@@ -115,6 +112,19 @@ void WorldModel::show(ostream &os)
             os << "Team conf: " << vp->getTeamConf() << " | ";
             os << "Unum conf: " << vp->getUnumConf() << "\n";
         }
+    }
+    PlayerObject *player, *unknown;
+    os << "Mapping: \n";
+    for (auto i : pm->getMapTo())
+    {
+        player = i.first;
+        unknown = i.second;
+
+        os << "[" << unknown->getUnum() << " | " << SoccerTypes::getSideStr(unknown->getSide()) << " | " <<
+                unknown->getLastVision().getAbsPos() << "] as [" <<
+                player->getUnum() << " (" << unknown->getLastVision().getUnumConf() << ")" <<
+              " | " << SoccerTypes::getSideStr(player->getSide()) <<
+              " (" << unknown->getLastVision().getTeamConf() << ")]" << "\n";
     }
 }
 
@@ -308,13 +318,7 @@ bool WorldModel::clearInfo()
             flags[i].setTime(-1);
         }
     }
-    unsureAll.clear();
-    unsureOpponents.clear();
-    unsureTeammates.clear();
 
-    listUnsureAll.clear();
-    listUnsureOpponents.clear();
-    listUnsureTeammates.clear();
 
     viewedFlags.clear();
     return true;
@@ -338,7 +342,10 @@ bool WorldModel::update(bool needMap)
 
         if (needMap)
         {
-            mapUnknownPlayers();
+            if (mapUnknownPlayers() == false)
+            {
+               Log.log(3, "Can't map players!!!");
+            }
             show(Log.getOutputStream());
         }
     }

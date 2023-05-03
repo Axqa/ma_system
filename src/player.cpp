@@ -36,7 +36,7 @@ void Player::mainLoop()
 
     while (alive)
     {
-        if (/*wm->getNewInfo() &&*/ wm->update(moveType==OBSERVE))
+        if (/*wm->getNewInfo() &&*/ wm->update(moveType==OBSERVE || moveType==NO_MOVE_OBSERVE))
         {
 //            wm->setNewInfo(false);
 
@@ -119,6 +119,9 @@ void Player::doMove()
 
     case LINE:
         LineMover();
+        break;
+
+    case NO_MOVE:
         break;
 
     default:

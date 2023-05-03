@@ -36,14 +36,6 @@ class WorldModel
 
     list<FixedObject> viewedFlags;
 
-    vector<PlayerObject> unsureAll;
-    vector<PlayerObject> unsureTeammates;
-    vector<PlayerObject> unsureOpponents;
-
-    list<PlayerObject> listUnsureAll;
-    list<PlayerObject> listUnsureTeammates;
-    list<PlayerObject> listUnsureOpponents;
-
     int unknownCount;
 
     int agentNum;

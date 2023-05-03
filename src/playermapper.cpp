@@ -1,6 +1,6 @@
 #include "playermapper.h"
 #include "logger.h"
-
+#include "soccertypes.h"
 extern Logger Log;
 
 PlayerMapper::PlayerMapper()
@@ -15,6 +15,11 @@ void PlayerMapper::init(Formations *fm, Agent *agent, PlayerObject *teammates, P
     this->teammates = teammates;
     this->opponents = opponents;
     this->unknownPlayers = unknownPlayers;
+}
+
+vector<pair<PlayerObject *, PlayerObject *> > PlayerMapper::getMapTo()
+{
+    return mapTo;
 }
 
 SideT PlayerMapper::getSide()
@@ -39,6 +44,8 @@ void PlayerMapper::setCurrentTime(int time)
 
 bool PlayerMapper::mapBeforeKickOff(int unknownCount)
 {
+    mapTo.clear();
+
     VecPosition pos;
     PlayerObject *p;
     int idxInFormation;
@@ -68,7 +75,8 @@ bool PlayerMapper::mapBeforeKickOff(int unknownCount)
         {
             vp.setUnumConf(1);
             vp.setAbsPos(fm->getFormation(fm->getFormationIndex()).getNearestPosInFormation(vp.getAbsPos(), &idxInFormation));
-            teammates[idxInFormation].addVision(vp);
+//            teammates[idxInFormation].addVision(vp);
+            addToMap(&teammates[idxInFormation], p);
             continue;
         }
 
@@ -76,7 +84,8 @@ bool PlayerMapper::mapBeforeKickOff(int unknownCount)
             continue;
 
         vp.setUnumConf(1);
-        opponents[p->getUnum() - 1].addVision(vp);
+//        opponents[p->getUnum() - 1].addVision(vp);
+        addToMap(&opponents[p->getUnum() - 1], p);
 
     }
 
@@ -84,26 +93,58 @@ bool PlayerMapper::mapBeforeKickOff(int unknownCount)
     for (int i = 0; i < unknownCount; ++i)
     {
         p = &unknownPlayers[i];
-        VisiblePlayer &vp = p->getLastVision();
 
         if (p->getSide() != getSide() && p->getUnum() == -1) // opponent
         {
-            decideUnknownOpponentBeforeKickOff(vp);
+            decideUnknownOpponentBeforeKickOff(p);
         }
 
     }
     return true;
 }
 
-void PlayerMapper::decideUnknownOpponentBeforeKickOff(VisiblePlayer &vp)
+bool PlayerMapper::provideMap()
 {
-    int firstEmpty, closest, closestUnsure;
+    for (auto i : mapTo)
+    {
+        i.first->addVision(i.second->getLastVision());
+    }
+}
+
+VecPosition PlayerMapper::getPos(PlayerObject &player)
+{
+
+    return player.getLastVision().getAbsPos();
+
+}
+
+void PlayerMapper::addToMap(PlayerObject *player, PlayerObject *unknown)
+{
+    mapTo.push_back({player, unknown});
+    player->addVision(unknown->getLastVision());
+}
+
+void PlayerMapper::decideUnknownOpponentBeforeKickOff(PlayerObject *p)
+{
+    VisiblePlayer &vp = p->getLastVision();
+    int firstEmpty, closest, closestUnmapped;
 
     closest = findClosestPlayer(opponents, MAX_OPPONENTS, vp.getAbsPos());
     if (closest != -1 && opponents[closest].getLastVision().getAbsPos().getDistanceTo(vp.getAbsPos()) < EPSILON)
-    {   // same player
-        vp.setUnumConf(opponents[closest].getLastVision().getUnumConf());
-        opponents[closest].addVision(vp);
+    {
+        if (isMapped(&opponents[closest]))
+        {
+            closestUnmapped = findClosestUnmapped(opponents, MAX_OPPONENTS, vp.getAbsPos());
+            vp.setUnumConf(opponents[closestUnmapped].getLastVision().getUnumConf());
+    //        opponents[closest].addVision(vp);
+            addToMap(&opponents[closestUnmapped], p);
+        }
+        else // same player
+        {
+            vp.setUnumConf(opponents[closest].getLastVision().getUnumConf());
+    //        opponents[closest].addVision(vp);
+            addToMap(&opponents[closest], p);
+        }
     }
     else
     {
@@ -112,20 +153,23 @@ void PlayerMapper::decideUnknownOpponentBeforeKickOff(VisiblePlayer &vp)
         // maybe new player, add to empty
         if (firstEmpty != -1)
         {
-            opponents[firstEmpty].addVision(vp);
+//            opponents[firstEmpty].addVision(vp);
+            addToMap(&opponents[firstEmpty], p);
         }
         else // no empty spots, add to nearest
         {
-            closestUnsure = findClosestUnsurePlayer(opponents, MAX_OPPONENTS, vp.getAbsPos());
-            if (closestUnsure != -1)
-            {
-                opponents[closestUnsure].addVision(vp);
 
+            closestUnmapped = findClosestUnmapped(opponents, MAX_OPPONENTS, vp.getAbsPos());
+            if (closestUnmapped != -1)
+            {
+//                opponents[closestUnsure].addVision(vp);
+                addToMap(&opponents[closestUnmapped], p);
             }
             else
             {
-                opponents[closest].addVision(vp);
-
+                vp.setUnumConf(opponents[closest].getLastVision().getUnumConf());
+//                opponents[closest].addVision(vp);
+                addToMap(&opponents[closest], p);
             }
         }
     }
@@ -179,6 +223,39 @@ int PlayerMapper::findClosestUnsurePlayer(PlayerObject *arr, int count, VecPosit
     return curClosest;
 }
 
+int PlayerMapper::findClosestUnmapped(PlayerObject *arr, int count, VecPosition pos)
+{
+    int curClosest = -1;
+    double minDist = 1000, curDist;
+    for (int i = 0; i < count; ++i)
+    {
+        if (arr[i].getHistory().getSize() == 0) continue;
+
+        if (isMapped(&arr[i])) continue;
+
+        curDist = pos.getDistanceTo(arr[i].getLastVision().getAbsPos());
+        if (curDist < minDist)
+        {
+            minDist = curDist;
+            curClosest = i;
+        }
+    }
+
+    return curClosest;
+}
+
+bool PlayerMapper::isMapped(PlayerObject *player)
+{
+    for (auto i : mapTo)
+    {
+        if (i.first == player)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 
 ClosestMapper::ClosestMapper()
@@ -189,6 +266,11 @@ ClosestMapper::ClosestMapper()
 
 bool ClosestMapper::mapInGame(int unknownCount)
 {
+    mapTo.clear();
+
+    listUnsureAll.clear();
+    listUnsureOpponents.clear();
+    listUnsureTeammates.clear();
 
     VecPosition pos;
     PlayerObject *p;
@@ -205,11 +287,14 @@ bool ClosestMapper::mapInGame(int unknownCount)
 
             if (p->getSide() == getSide()) // teammate
             {
-                teammates[p->getUnum()-1].addVision(vp);
+//                teammates[p->getUnum()-1].addVision(vp);
+                addToMap(&teammates[p->getUnum()-1], p);
             }
             else // opponent
             {
-                opponents[p->getUnum()-1].addVision(vp);
+//                opponents[p->getUnum()-1].addVision(vp);
+                addToMap(&opponents[p->getUnum()-1], p);
+
             }
         }
         else // unknown unum
@@ -219,16 +304,16 @@ bool ClosestMapper::mapInGame(int unknownCount)
                 vp.setTeamConf(1);
                 if (p->getSide() == getSide()) // teammate
                 {
-                    listUnsureTeammates.push_back(*p);
+                    listUnsureTeammates.push_back(p);
                 }
                 else // opponent
                 {
-                    listUnsureOpponents.push_back(*p);
+                    listUnsureOpponents.push_back(p);
                 }
             }
             else
             {
-                listUnsureAll.push_back(*p);
+                listUnsureAll.push_back(p);
             }
         }
     }
@@ -284,17 +369,17 @@ bool ClosestMapper::mapOpponents()
 }
 
 
-bool   ClosestMapper::mapToClosest(PlayerObject player, PlayerObject* arr, int count)
+bool   ClosestMapper::mapToClosest(PlayerObject *player, PlayerObject* arr, int count)
 {
     double sum = 0, e = 0, minE = 0, dist, minDist = 1000;
     int minIdx = -1;
     VecPosition pos;
-    VisiblePlayer vp = player.getLastVision();
+    VisiblePlayer &vp = player->getLastVision();
     VecPosition playerPos = vp.getAbsPos();
     for (int i = 0; i < count; ++i)
     {
         if (arr[i].getLastSeeTime() == getCurrentTime()) continue;
-        pos = arr[i].getLastVision().getAbsPos();
+        pos = getPos(arr[i]);
 
         dist = pos.getDistanceTo(playerPos);
 
@@ -314,23 +399,24 @@ bool   ClosestMapper::mapToClosest(PlayerObject player, PlayerObject* arr, int c
     if (minIdx == -1) return false;
 
     vp.setUnumConf(minE / max(sum, MIN_DIST));
-    arr[minIdx].addVision(vp);
 
+//    arr[minIdx].addVision(vp);
+    addToMap(&arr[minIdx], player);
     return true;
 }
 
-bool ClosestMapper::mapToClosestFromAll(PlayerObject player, PlayerObject *arr, int count)
+bool ClosestMapper::mapToClosestFromAll(PlayerObject *player, PlayerObject *arr, int count)
 {
     double sum = 0, e = 0, minE = 0, dist, minDist = 1000;
     int minIdx = -1;
     VecPosition pos;
     double t1 = 0, t2 = 0;
-    VisiblePlayer vp = player.getLastVision();
+    VisiblePlayer &vp = player->getLastVision();
     VecPosition playerPos = vp.getAbsPos();
     for (int i = 0; i < count; ++i)
     {
         if (arr[i].getLastSeeTime() == getCurrentTime()) continue;
-        pos = arr[i].getLastVision().getAbsPos();
+        pos = getPos(arr[i]);
 
         dist = pos.getDistanceTo(playerPos);
 
@@ -356,8 +442,8 @@ bool ClosestMapper::mapToClosestFromAll(PlayerObject player, PlayerObject *arr, 
 
     vp.setTeamConf(minIdx < count/2 ? t1 / (t1+t2) : t2 / (t1+t2));
     vp.setUnumConf(minE / max(sum, MIN_DIST));
-    arr[minIdx].addVision(vp);
-
+//    arr[minIdx].addVision(vp);
+    addToMap(&arr[minIdx], player);
     return true;
 }
 
@@ -382,3 +468,246 @@ int ClosestMapper::findClosestForLastSee(PlayerObject* arr, int count, VecPositi
 
     return curClosest;
 }
+
+MinSumMapper::MinSumMapper()
+{
+
+}
+
+bool MinSumMapper::mapInGame(int unknownCount)
+{
+    mapTo.clear();
+
+    unknowns.clear();
+    unmappedPlayers.clear();
+
+    unsureAll.clear();
+    unsureOpponents.clear();
+    unsureTeammates.clear();
+
+//    cout << "Start mapping with " << unknownCount <<  endl;
+//    for (int i = 0; i < unknownCount; ++i)
+//    {
+//        cout << unknownPlayers[i].getUnum() << " | " << SoccerTypes::getSideStr(unknownPlayers[i].getSide()) << " | " <<  getPos(unknownPlayers[i]) << endl;
+//    }
+
+    mapKnowns(unknownCount);
+
+    createListUnmapped();
+
+
+    VecPosition pos;
+    PlayerObject *p;
+    double dist;
+    for (int i = 0; i < unknownCount; ++i)
+    {
+        p = &unknownPlayers[i];
+        VisiblePlayer &vp = p->getLastVision();
+
+        if (p->getUnum() == -1) // unknown unum
+        {
+            Unknown u;
+
+            u.curPossible = 0;
+            u.player = p;
+
+            for (int j = 0; j < unmappedPlayers.size(); ++j)
+            {
+                // if we know side of unknown and it is not same with player's side, then skip
+                if (p->getSide() != SIDE_ILLEGAL && p->getSide() != unmappedPlayers[j].player->getSide())
+                    continue;
+
+                dist = unmappedPlayers[j].pos.getDistanceTo(getPos(*p));
+
+                // if player too far from unknown, then skip
+                if (dist > PLAYER_SPEED_MAX * (getCurrentTime() - unmappedPlayers[j].player->getLastSeeTime()) * 2)
+                    continue;
+
+                u.possibleTargets.push_back(
+                    {&unmappedPlayers[j], dist}
+                );
+            }
+            unknowns.push_back(u);
+        }
+    }
+    return mapUnknowns();
+}
+
+bool MinSumMapper::mapKnowns(int unknownCount)
+{
+    VecPosition pos;
+    PlayerObject *p;
+
+    for (int i = 0; i < unknownCount; ++i)
+    {
+        p = &unknownPlayers[i];
+        VisiblePlayer &vp = p->getLastVision();
+
+        if (p->getUnum() != -1) // known player
+        {
+            vp.setUnumConf(1);
+            vp.setTeamConf(1);
+
+            if (p->getSide() == getSide()) // teammate
+            {
+//                teammates[p->getUnum()-1].addVision(vp);
+                addToMap(&teammates[p->getUnum()-1], p);
+            }
+            else // opponent
+            {
+//                opponents[p->getUnum()-1].addVision(vp);
+                addToMap(&opponents[p->getUnum()-1], p);
+            }
+        }
+        else
+        {
+            if (p->getSide() != SIDE_ILLEGAL)
+            {
+                vp.setTeamConf(1);
+            }
+        }
+    }
+
+    return true;
+}
+
+void MinSumMapper::createListUnmapped()
+{
+    unmappedPlayers.clear();
+
+    for (int i = 0; i < MAX_TEAMMATES; ++i)
+    {
+        PlayerObject *p = &teammates[i];
+        if (isMapped(p)) continue;
+
+        PlayerToMap ptm;
+        ptm.player = p;
+        ptm.pos = getPos(*ptm.player);
+        ptm.unmapped = true;
+        ptm.unknownIndex = -1;
+
+        unmappedPlayers.push_back(ptm);
+    }
+
+    for (int i = 0; i < MAX_OPPONENTS; ++i)
+    {
+        PlayerObject *p = &opponents[i];
+        if (isMapped(p)) continue;
+
+        PlayerToMap ptm;
+        ptm.player = p;
+        ptm.pos = getPos(*ptm.player);
+        ptm.unmapped = true;
+        ptm.unknownIndex = -1;
+
+        unmappedPlayers.push_back(ptm);
+    }
+}
+
+bool MinSumMapper::mapUnknowns()
+{
+    if (unknowns.size() == 0) return true;
+
+    Log.log(3, "Start mapping with %d unknowns", unknowns.size());
+    double minDist = mapOne(0);
+
+    if (minDist < 0)
+    {
+        Log.log(3, "Unsuccessful end of mapping with min dist %f", minDist);
+        return false;
+    }
+
+    unknowns[0].globalMinPossible = unknowns[0].minPossible;
+    for (auto unknown : unknowns)
+    {
+        VisiblePlayer &vp = unknown.player->getLastVision();
+        vp.setUnumConf(0.5);
+        if (vp.getTeamConf() != 1)
+        {
+            vp.setTeamConf(0.5);
+        }
+
+        addToMap(unknown.globalMinPossible->ptm->player, unknown.player);
+
+    }
+
+    Log.log(3, "Successful end of mapping with min dist %f", minDist);
+
+    return true;
+}
+
+double MinSumMapper::mapOne(int curUnknown)
+{
+    if (curUnknown == unknowns.size())
+    {
+        return 0;
+    }
+
+    bool notFound = true;
+    double minDist = 10000, curDist = 0;
+
+    Log.log(3, " Start mapOne for %d (%f, %f) with %d possible targets",
+            curUnknown,
+            unknowns[curUnknown].player->getLastVision().getAbsPos().getX(),
+            unknowns[curUnknown].player->getLastVision().getAbsPos().getY(),
+            unknowns[curUnknown].possibleTargets.size());
+
+    for (auto &possible : unknowns[curUnknown].possibleTargets)
+    {
+        Log.log(3, "  Possible target: (%f, %f) with index %d and dist %f",
+                possible.ptm->pos.getX(),
+                possible.ptm->pos.getY(),
+                possible.ptm->unknownIndex,
+                possible.dist);
+
+        // if target not occupied
+        if (possible.ptm->unknownIndex == -1)
+        {
+            // set this player as current unknown
+            possible.ptm->unknownIndex = curUnknown;
+
+            // calc min dist for rest of unknowns
+            curDist = mapOne(curUnknown+1);
+
+            // if dist not found, skip this combination
+            if (curDist < -0.5)
+            {
+                possible.ptm->unknownIndex = -1;
+                continue;
+            }
+
+            // if dist exists, add dist for current unknown and set flag to false
+            curDist += possible.dist;
+
+            // found at least one combination
+            notFound = false;
+
+            // if dist is minimal for this unknown, remember combination
+            if (curDist < minDist)
+            {
+                Log.log(3, "   Min dist updated");
+
+                minDist = curDist;
+
+                unknowns[curUnknown].minPossible = &possible;
+
+                for (int unk = curUnknown+1; unk < unknowns.size(); ++unk)
+                {
+                    unknowns[unk].globalMinPossible = unknowns[unk].minPossible;
+                }
+            }
+
+            // free this possible player for next iteration
+            possible.ptm->unknownIndex = -1;
+        }
+    }
+    Log.log(3, " End of mapOne with notFound=%d, minDist=%f", notFound, minDist);
+
+    // if dist can't be found, return -1
+    if (notFound) return -1;
+
+    // else return minimal distance
+    return minDist;
+
+}
+
