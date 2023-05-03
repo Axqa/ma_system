@@ -5,6 +5,8 @@
 #include "soccertypes.h"
 #include <sys/time.h>
 #include "logger.h"
+#include <numeric>
+#include <cmath>
 
 extern Logger Log;
 
@@ -85,6 +87,8 @@ void WorldModel::show(ostream &os)
         os << " Side: " << SoccerTypes::getSideStr( p->getSide()) << " | ";
         os << " Num: " << p->getUnum() << '\n';
 
+        os << " | Predicted: " << p->getPredictedPos() << "\n";
+
         size = p->getHistory().getSize();
         for (int j = 0; j < size; ++j)
         {
@@ -102,6 +106,8 @@ void WorldModel::show(ostream &os)
         os << "Opponent ";
         os << " Side: " << SoccerTypes::getSideStr( p->getSide()) << " | ";
         os << " Num: " << p->getUnum() << '\n';
+
+        os << " | Predicted: " << p->getPredictedPos() << "\n";
 
         size = p->getHistory().getSize();
         for (int j = 0; j < size; ++j)
@@ -342,6 +348,8 @@ bool WorldModel::update(bool needMap)
 
         if (needMap)
         {
+            updatePredictions();
+
             if (mapUnknownPlayers() == false)
             {
                Log.log(3, "Can't map players!!!");
@@ -691,4 +699,72 @@ bool WorldModel::mapUnknownPlayers()
     }
 
     return pm->mapInGame(unknownCount);
+}
+
+// returns pair <slope, intercept>
+pair<double, double> linear_regression(vector<double>& x, vector<double>& y) {
+    int n = x.size();
+    double sum_x = accumulate(x.begin(), x.end(), 0.0);
+    double sum_y = accumulate(y.begin(), y.end(), 0.0);
+    double mean_x = sum_x / n;
+    double mean_y = sum_y / n;
+
+    double cov = 0.0;  // covariance
+    double var_x = 0.0;  // variance x
+    for (int i = 0; i < n; i++) {
+        cov += (x[i] - mean_x) * (y[i] - mean_y);
+        var_x += pow(x[i] - mean_x, 2);
+    }
+
+    double slope = cov / var_x;
+    if (isnan(slope)) slope = 0;
+    double intercept = mean_y - slope * mean_x;
+
+    return {slope, intercept};
+}
+
+bool WorldModel::updatePredictions()
+{
+    vector<double> xs, ys, ts;
+    VisiblePlayer vp;
+    for (int i = 0; i < MAX_TEAMMATES; ++i)
+    {
+        if (agent.getUnum() == i-1)
+        {
+            teammates[i].setPredictedPos(agent.getAbsPos());
+            continue;
+        }
+
+        calcPrediction(&teammates[i]);
+
+    }
+    for (int i = 0; i < MAX_OPPONENTS; ++i)
+    {
+        calcPrediction(&opponents[i]);
+    }
+    return true;
+}
+
+void WorldModel::calcPrediction(PlayerObject *player)
+{
+    vector<double> xs, ys, ts;
+    VisiblePlayer vp;
+
+    xs.clear();
+    ys.clear();
+    ts.clear();
+    History h = player->getHistory();
+    for (int j = 0; j < h.getSize(); ++j)
+    {
+        vp = h.getEntry(j);
+        xs.push_back(vp.getAbsPos().getX());
+        ys.push_back(vp.getAbsPos().getY());
+        ts.push_back(vp.getTime());
+    }
+    auto xCoef = linear_regression(ts,xs);
+    auto yCoef = linear_regression(ts,ys);
+
+    player->setPredictedPos(VecPosition(
+                                     xCoef.first * getCurrentTime() + xCoef.second,
+                                     yCoef.first * getCurrentTime() + yCoef.second));
 }

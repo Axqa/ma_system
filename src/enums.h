@@ -310,4 +310,10 @@ enum MoveT {
     NO_MOVE_OBSERVE
 };
 
+enum PredT {
+    PRED_LINEAR,
+    PRED_LS,
+    PRED_KALMAN
+};
+
 #endif // ENUMS_H

@@ -115,6 +115,8 @@ public:
 
     bool   mapUnknownPlayers();
 
+    bool   updatePredictions();
+    void   calcPrediction(PlayerObject *player);
 };
 
 #endif // WORLDMODEL_H

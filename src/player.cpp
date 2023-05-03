@@ -131,6 +131,11 @@ void Player::doMove()
 
 void Player::LineMover()
 {
+    if (wm->getAgent().getViewAngle() != VA_NARROW)
+    {
+        act->sendChangeViewCmd(VA_NARROW);
+        return;
+    }
     if (target == VecPosition() || target.getDistanceTo(wm->getAgent().getAbsPos()) < 10)
     {
         target = VecPosition((rand() % (int)PITCH_LENGTH) - (int)PITCH_LENGTH/2, (rand() % (int)PITCH_WIDTH) - (int)PITCH_WIDTH/2);

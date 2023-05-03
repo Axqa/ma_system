@@ -68,7 +68,7 @@ Formations::Formations(const char* filename, int playerNum)
     formationIndex = 0;
 
     // wait to set right order of players
-    usleep(playerNum * 500000);
+    usleep(playerNum * 750000);
 }
 
 void Formations::show( ostream &os )

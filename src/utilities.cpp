@@ -5,6 +5,9 @@
 #include <cstdio>
 #include <string.h>
 #include <cmath>
+
+int    HISTORY_SIZE = 3;
+
 using namespace std;
 
 /*! This function returns the sign of a give double.

@@ -63,6 +63,7 @@ protected:
     int    findClosestUnmapped(PlayerObject* arr, int count, VecPosition pos);
 
     bool   isMapped(PlayerObject* player);
+    double confFromDist(double dist);
 };
 
 class ClosestMapper : public PlayerMapper
@@ -110,10 +111,14 @@ protected:
         int curPossible;
         PossiblePlayer *minPossible;
         PossiblePlayer *globalMinPossible;
+        double sumLeft;
+        double sumRight;
     };
 
     vector<Unknown> unknowns;
     vector<PlayerToMap> unmappedPlayers;
+
+    double sumDist;
 protected:
     vector<PlayerObject> unsureAll;
     vector<PlayerObject> unsureTeammates;
@@ -127,8 +132,25 @@ protected:
 
     void createListUnmapped();
 
+    virtual void createUnknowns(int unknownCount);
+
     bool mapUnknowns();
     double mapOne(int curUnknown);
+};
+
+class ClosestPredictMapper : public ClosestMapper
+{
+public:
+    ClosestPredictMapper();
+protected:
+    VecPosition getPos(PlayerObject& player) override;
+};
+
+class MinSumPredictMapper : public MinSumMapper
+{
+protected:
+    VecPosition getPos(PlayerObject& player) override;
+    void createUnknowns(int unknownCount) override;
 };
 
 #endif // PLAYERMAPPER_H
