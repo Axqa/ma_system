@@ -7,7 +7,7 @@
 #include "logger.h"
 #include <numeric>
 #include <cmath>
-
+#include <chrono>
 extern Logger Log;
 
 WorldModel::WorldModel(Formations *fm, PlayerMapper* pm)
@@ -348,12 +348,20 @@ bool WorldModel::update(bool needMap)
 
         if (needMap)
         {
-            updatePredictions();
 
+            updatePredictions();
+            auto start = std::chrono::high_resolution_clock::now();
             if (mapUnknownPlayers() == false)
             {
                Log.log(3, "Can't map players!!!");
             }
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+//            std::cout << "Time: " << duration.count() << " mcs" << std::endl;
+
+            Log.getOutputStream() << "Time for mapping: " << duration.count() << " mcs" << endl;
+
             show(Log.getOutputStream());
         }
     }

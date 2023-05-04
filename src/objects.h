@@ -114,6 +114,8 @@ public:
 
     VecPosition getPredictedPos();
     void setPredictedPos(VecPosition pos);
+
+    bool couldGetToInTime(VecPosition pos, int time);
 };
 
 class Agent : public Object, public PlayerInfo {

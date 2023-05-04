@@ -29,6 +29,7 @@ using namespace std;
 
 #define PLAYER_SPEED_MAX    1.05        /*!< default maximal player speed    */
 #define PLAYER_MAX_POWER    100         /*!< default player max dash power   */
+#define HISTORY_THR         3           /*!< number of confident history entries*/
 
 #define SERVER_TIME_OUT     3
 

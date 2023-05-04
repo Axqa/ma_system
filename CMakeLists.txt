@@ -33,6 +33,8 @@ set(SOURCES
   src/soccertypes.h
   src/playermapper.cpp
   src/playermapper.h
+  src/strategy.cpp
+  src/strategy.h
   )
 
 set(OTHER

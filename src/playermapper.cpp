@@ -611,7 +611,7 @@ void MinSumMapper::createUnknowns(int unknownCount)
                     continue;
 
                 u.possibleTargets.push_back(
-                    {&unmappedPlayers[j], dist}
+                    {&unmappedPlayers[j], dist, 0}
                 );
             }
             unknowns.push_back(u);
@@ -635,26 +635,25 @@ bool MinSumMapper::mapUnknowns()
 
 
 //    unknowns[0].globalMinPossible = unknowns[0].minPossible;
-    for (auto unknown : unknowns)
+    for (auto &unknown : unknowns)
     {
         VisiblePlayer &vp = unknown.player->getLastVision();
-        vp.setUnumConf(confFromDist(minDist) / sumDist);
+        vp.setUnumConf(unknown.minPossible->sumDist / sumDist);
 
         if (vp.getTeamConf() != 1)
         {
             if (unknown.minPossible->ptm->player->getSide() == SIDE_LEFT)
-                vp.setTeamConf(confFromDist(unknown.sumLeft) / (confFromDist(unknown.sumLeft)+confFromDist(unknown.sumRight)));
+                vp.setTeamConf((unknown.sumLeft) / ((unknown.sumLeft)+(unknown.sumRight)));
             else
-                vp.setTeamConf(confFromDist(unknown.sumRight) / (confFromDist(unknown.sumLeft)+confFromDist(unknown.sumRight)));
+                vp.setTeamConf((unknown.sumRight) / ((unknown.sumLeft)+(unknown.sumRight)));
         }
 
         addToMap(unknown.minPossible->ptm->player, unknown.player);
 
-        if (isinf( vp.getUnumConf()))
-        {
-            cout << "Inf with: \nminDist = " << confFromDist(minDist) << "\nsumDist = " << sumDist <<
-                    "\nsumLeft = " << confFromDist(unknown.sumLeft) << "\nsumRight = " << confFromDist(unknown.sumRight) << endl;
-        }
+//        if (vp.getUnumConf() != 1)
+//        {
+//            cout << "Halliluya" << endl;
+//        }
 
     }
 
@@ -673,17 +672,24 @@ double MinSumMapper::mapOne(int curUnknown)
         {
             dist += unknown.possibleTargets[unknown.curPossible].dist;
 
-            if (unknown.possibleTargets[unknown.curPossible].ptm->player->getSide() == SIDE_LEFT)
-            {
-                unknown.sumLeft += unknown.possibleTargets[unknown.curPossible].dist;
-            }
-            else
-            {
-                unknown.sumRight += unknown.possibleTargets[unknown.curPossible].dist;
-            }
         }
         conf = confFromDist(dist);
         sumDist += conf;
+
+        for (auto &unknown : unknowns)
+        {
+            unknown.possibleTargets[unknown.curPossible].sumDist += conf;
+
+
+            if (unknown.possibleTargets[unknown.curPossible].ptm->player->getSide() == SIDE_LEFT)
+            {
+                unknown.sumLeft += conf;
+            }
+            else
+            {
+                unknown.sumRight += conf;
+            }
+        }
         return 0;
     }
 
@@ -815,11 +821,13 @@ void MinSumPredictMapper::createUnknowns(int unknownCount)
                 if (p->getSide() != SIDE_ILLEGAL && p->getSide() != unmappedPlayers[j].player->getSide())
                     continue;
 
-                dist = unmappedPlayers[j].pos.getDistanceTo(getPos(*p));
+//                dist = unmappedPlayers[j].pos.getDistanceTo(getPos(*p));
 
-//                // if player too far from unknown, then skip
-//                if (dist > PLAYER_SPEED_MAX * (getCurrentTime() - unmappedPlayers[j].player->getLastSeeTime()) * 10)
-//                    continue;
+                dist = vp.getAbsPos().getDistanceTo(getPos(*unmappedPlayers[j].player));
+
+                // if player too far from unknown, then skip
+                if (unmappedPlayers[j].player->couldGetToInTime(vp.getAbsPos(), getCurrentTime()) == false)
+                    continue;
 
                 u.possibleTargets.push_back(
                     {&unmappedPlayers[j], dist}

@@ -184,6 +184,22 @@ void PlayerObject::setPredictedPos(VecPosition pos)
     predictedPos = pos;
 }
 
+bool PlayerObject::couldGetToInTime(VecPosition pos, int time)
+{
+    bool res = false, cur;
+    for (int i = history.getSize()-1; i >= max(0, history.getSize()-HISTORY_THR); --i)
+    {
+        VisiblePlayer &vp = history.getEntry(i);
+        cur = vp.getAbsPos().getDistanceTo(pos) < PLAYER_SPEED_MAX * (time - vp.getTime()) * 1.5;
+        if (vp.getUnumConf() > 0.5)
+            return cur;
+
+        res |= cur;
+
+    }
+    return res;
+}
+
 AngDeg VisiblePlayer::getRelBodyAngle()
 {
     return relBodyAngle;

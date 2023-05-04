@@ -103,6 +103,7 @@ protected:
     {
         PlayerToMap *ptm;
         double dist;
+        double sumDist;
     };
     struct Unknown
     {
