@@ -81,12 +81,12 @@ clean: CMakeFiles/player.dir/clean
 CMakeFiles/player.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/player.dir/build.make CMakeFiles/player.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/player.dir/build.make CMakeFiles/player.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/mnt/c/max/diplom/test5/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14 "Built target player"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/mnt/c/max/diplom/test5/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 "Built target player"
 .PHONY : CMakeFiles/player.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/player.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/max/diplom/test5/build/CMakeFiles 14
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/max/diplom/test5/build/CMakeFiles 15
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/player.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/max/diplom/test5/build/CMakeFiles 0
 .PHONY : CMakeFiles/player.dir/rule

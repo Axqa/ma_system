@@ -10,6 +10,7 @@
 #include <vector>
 #include <list>
 #include "playermapper.h"
+#include "strategy.h"
 
 using namespace std;
 
@@ -20,6 +21,7 @@ class WorldModel
 
     Formations *fm;
     PlayerMapper *pm;
+    Strategy *st;
 
     string teamName;
 
@@ -53,7 +55,7 @@ class WorldModel
 
     std::ostringstream extraInfo;
 public:
-    WorldModel(Formations *fm, PlayerMapper* pm);
+    WorldModel(Formations *fm, PlayerMapper* pm, Strategy *st);
 
     void show(ostream &os = cout);
     void showAgent(ostream &os = cout);
@@ -117,6 +119,8 @@ public:
 
     bool   updatePredictions();
     void   calcPrediction(PlayerObject *player);
+
+    void   predictTeammateWithStrategy(PlayerObject *player);
 };
 
 #endif // WORLDMODEL_H

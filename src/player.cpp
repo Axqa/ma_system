@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "soccertypes.h"
-
+#include "globals.h"
 extern Logger Log;
 
 void* stdin_callback( void * v )
@@ -14,8 +14,8 @@ void* stdin_callback( void * v )
   return 0;
 }
 
-Player::Player(WorldModel *wm, ActHandler *act, Formations *fm, string teamName, double version, MoveT moveType)
-    : fm(fm), wm(wm), act(act), version(version), alive(true), moveType(moveType)
+Player::Player(WorldModel *wm, ActHandler *act, Formations *fm, Strategy *st, string teamName, double version, MoveT moveType)
+    : fm(fm), wm(wm), act(act), st(st), version(version), alive(true), moveType(moveType)
 {
     char str[MAX_MSG];
 
@@ -53,7 +53,15 @@ void Player::mainLoop()
                         fm->setFormationIndex(1);
                     }
 
-                    act->sendMoveCmd(fm->getAgentPos());
+                    if ((moveType == OBSERVE || NO_MOVE_OBSERVE) && AGENT_POS != VecPosition())
+                    {
+                        act->sendMoveCmd(AGENT_POS);
+                    }
+                    else
+                    {
+                        act->sendMoveCmd(fm->getAgentPos());
+
+                    }
                     movedToFormationPos = true;
                     continue;
                 }
@@ -94,7 +102,7 @@ void Player::mainLoop()
             {
                 if (fm->getPlayerNum() == 9) // assume 9 player always kick off ball
                 {   // weakly kick ball
-                    act->sendKickCmd(100, 0);
+                    act->sendKickCmd(10, 0);
                     continue;
                 }
             }
@@ -136,10 +144,17 @@ void Player::LineMover()
         act->sendChangeViewCmd(VA_NARROW);
         return;
     }
-    if (target == VecPosition() || target.getDistanceTo(wm->getAgent().getAbsPos()) < 10)
+
+    if (wm->getAgent().getNeckToBodyAngle() != 0)
     {
-        target = VecPosition((rand() % (int)PITCH_LENGTH) - (int)PITCH_LENGTH/2, (rand() % (int)PITCH_WIDTH) - (int)PITCH_WIDTH/2);
+        act->sendTurnNeckCmd(wm->getAgent().getNeckToBodyAngle());
+        return;
     }
+//    if (target == VecPosition() || target.getDistanceTo(wm->getAgent().getAbsPos()) < 10)
+//    {
+//        target = VecPosition((rand() % (int)PITCH_LENGTH) - (int)PITCH_LENGTH/2, (rand() % (int)PITCH_WIDTH) - (int)PITCH_WIDTH/2);
+//    }
+    target = st->getStrategyTargetForTime(wm->getAgent().getUnum(), wm->getCurrentTime());
 
     // We do not turning neck, so global neck angle == global body angle
     VecPosition dir = target - wm->getAgent().getAbsPos();

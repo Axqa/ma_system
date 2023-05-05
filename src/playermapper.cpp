@@ -135,7 +135,7 @@ void PlayerMapper::decideUnknownOpponentBeforeKickOff(PlayerObject *p)
         if (isMapped(&opponents[closest]))
         {
             closestUnmapped = findClosestUnmapped(opponents, MAX_OPPONENTS, vp.getAbsPos());
-            vp.setUnumConf(opponents[closestUnmapped].getLastVision().getUnumConf());
+//            vp.setUnumConf(opponents[closestUnmapped].getLastVision().getUnumConf());
     //        opponents[closest].addVision(vp);
             addToMap(&opponents[closestUnmapped], p);
         }
@@ -167,7 +167,7 @@ void PlayerMapper::decideUnknownOpponentBeforeKickOff(PlayerObject *p)
             }
             else
             {
-                vp.setUnumConf(opponents[closest].getLastVision().getUnumConf());
+//                vp.setUnumConf(opponents[closest].getLastVision().getUnumConf());
 //                opponents[closest].addVision(vp);
                 addToMap(&opponents[closest], p);
             }

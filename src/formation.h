@@ -39,7 +39,7 @@ public:
     int getPlayerNum();
 
     VecPosition getAgentPos();
-
+    VecPosition getPlayerPos(int unum);
 private:
     bool readFile(const char* filename);
 };

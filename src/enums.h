@@ -311,9 +311,16 @@ enum MoveT {
 };
 
 enum PredT {
-    PRED_LINEAR,
     PRED_LS,
+    PRED_LS_WITH_TEAM,
     PRED_KALMAN
+};
+
+enum MapT {
+    MAP_CLOSEST,
+    MAP_MINSUM,
+    MAP_CLOSEST_PRED,
+    MAP_MINSUM_PRED
 };
 
 #endif // ENUMS_H

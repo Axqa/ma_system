@@ -6,7 +6,10 @@
 #include <string.h>
 #include <cmath>
 
+PredT PREDICT_TYPE = PRED_LS_WITH_TEAM;
 int    HISTORY_SIZE = 3;
+VecPosition AGENT_POS;
+MapT MAP_TYPE = MAP_MINSUM_PRED;
 
 using namespace std;
 

@@ -35,6 +35,7 @@ set(SOURCES
   src/playermapper.h
   src/strategy.cpp
   src/strategy.h
+  src/globals.h
   )
 
 set(OTHER

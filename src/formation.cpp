@@ -149,3 +149,8 @@ VecPosition Formations::getAgentPos()
     return getFormation(formationIndex).getPos(playerNum-1);
 }
 
+VecPosition Formations::getPlayerPos(int unum)
+{
+    return getFormation(formationIndex).getPos(unum - 1);
+}
+

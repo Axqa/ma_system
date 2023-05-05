@@ -9,9 +9,10 @@
 #include <cmath>
 #include <chrono>
 extern Logger Log;
+extern PredT PREDICT_TYPE;
 
-WorldModel::WorldModel(Formations *fm, PlayerMapper* pm)
-    : fm(fm), pm(pm)
+WorldModel::WorldModel(Formations *fm, PlayerMapper* pm, Strategy *st)
+    : fm(fm), pm(pm), st(st)
 {
     pthread_mutex_init( &mutex_newInfo, NULL );
     pthread_cond_init ( &cond_newInfo,  NULL );
@@ -65,6 +66,7 @@ void WorldModel::show(ostream &os)
     PlayerObject *p;
     VisiblePlayer *vp;
     int size;
+    int invert = getSide() == SIDE_LEFT ? 1 : -1;
     os << "World model:" << '\n';
     os << "Time: " << getCurrentTime() << '\n';
     os << "Play mode: " << SoccerTypes::getPlayModeStr(getPlayMode()) << "\n";
@@ -76,7 +78,7 @@ void WorldModel::show(ostream &os)
         os << "Unknown " << i << " | ";
         os << " Side: " << SoccerTypes::getSideStr( p->getSide()) << " | ";
         os << " Num: " << p->getUnum() << " | ";
-        os << " Last Pos: " << vp->getAbsPos() << '\n';
+        os << " Last Pos: " << vp->getAbsPos() * invert << '\n';
 
     }
     os << "\nTeammates: " << "\n";
@@ -87,14 +89,14 @@ void WorldModel::show(ostream &os)
         os << " Side: " << SoccerTypes::getSideStr( p->getSide()) << " | ";
         os << " Num: " << p->getUnum() << '\n';
 
-        os << " | Predicted: " << p->getPredictedPos() << "\n";
+        os << " | Predicted: " << p->getPredictedPos() * invert << "\n";
 
         size = p->getHistory().getSize();
         for (int j = 0; j < size; ++j)
         {
             vp = &(p->getHistory().getEntry(size - j - 1));
             os << " | Time: " << vp->getTime() << " | ";
-            os << "Pos: " << vp->getAbsPos() << " | ";
+            os << "Pos: " << vp->getAbsPos() * invert << " | ";
             os << "Team conf: " << vp->getTeamConf() << " | ";
             os << "Unum conf: " << vp->getUnumConf() << "\n";
         }
@@ -107,14 +109,14 @@ void WorldModel::show(ostream &os)
         os << " Side: " << SoccerTypes::getSideStr( p->getSide()) << " | ";
         os << " Num: " << p->getUnum() << '\n';
 
-        os << " | Predicted: " << p->getPredictedPos() << "\n";
+        os << " | Predicted: " << p->getPredictedPos() * invert << "\n";
 
         size = p->getHistory().getSize();
         for (int j = 0; j < size; ++j)
         {
             vp = &(p->getHistory().getEntry(size - j - 1));
             os << " | Time: " << vp->getTime() << " | ";
-            os << "Pos: " << vp->getAbsPos() << " | ";
+            os << "Pos: " << vp->getAbsPos() * invert << " | ";
             os << "Team conf: " << vp->getTeamConf() << " | ";
             os << "Unum conf: " << vp->getUnumConf() << "\n";
         }
@@ -127,7 +129,7 @@ void WorldModel::show(ostream &os)
         unknown = i.second;
 
         os << "[" << unknown->getUnum() << " | " << SoccerTypes::getSideStr(unknown->getSide()) << " | " <<
-                unknown->getLastVision().getAbsPos() << "] as [" <<
+                unknown->getLastVision().getAbsPos() * invert << "] as [" <<
                 player->getUnum() << " (" << unknown->getLastVision().getUnumConf() << ")" <<
               " | " << SoccerTypes::getSideStr(player->getSide()) <<
               " (" << unknown->getLastVision().getTeamConf() << ")]" << "\n";
@@ -742,8 +744,10 @@ bool WorldModel::updatePredictions()
             teammates[i].setPredictedPos(agent.getAbsPos());
             continue;
         }
-
-        calcPrediction(&teammates[i]);
+        if (PREDICT_TYPE == PRED_LS_WITH_TEAM)
+            predictTeammateWithStrategy(&teammates[i]);
+        else
+            calcPrediction(&teammates[i]);
 
     }
     for (int i = 0; i < MAX_OPPONENTS; ++i)
@@ -774,5 +778,27 @@ void WorldModel::calcPrediction(PlayerObject *player)
 
     player->setPredictedPos(VecPosition(
                                      xCoef.first * getCurrentTime() + xCoef.second,
-                                     yCoef.first * getCurrentTime() + yCoef.second));
+                                yCoef.first * getCurrentTime() + yCoef.second));
+}
+
+void WorldModel::predictTeammateWithStrategy(PlayerObject *player)
+{
+    VecPosition target = st->getStrategyTargetForTime(player->getUnum(), getCurrentTime());
+//    VecPosition prevTarget = (getCurrentTime() < st->getTimeForTarget()) ?
+//                fm->getPlayerPos(player->getUnum()) :
+//                st->getStrategyTargetForTime(player->getUnum(), getCurrentTime() - st->getTimeForTarget());
+
+
+    VecPosition lastPos = player->getLastVision().getAbsPos();
+    int lastTime = player->getLastSeeTime();
+
+    VecPosition pred = lastPos + (target - lastPos).normalize() * (getCurrentTime() - lastTime) * PLAYER_SPEED_MAX * 0.9;
+
+    if (vecInField(pred) == false)
+    {
+        calcPrediction(player);
+        return;
+    }
+
+    player->setPredictedPos(pred);
 }

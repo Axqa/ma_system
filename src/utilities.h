@@ -36,6 +36,7 @@ using namespace std;
 typedef double AngRad;  /*!< Type definition for angles in degrees. */
 typedef double AngDeg;  /*!< Type definition for angles in radians. */
 
+extern PredT PREDICT_TYPE;
 extern int    HISTORY_SIZE;                  /*!< default maximum history size    */
 const double  UnknownDoubleValue  = -1000.0; /*!< indicates unknown double   */
 const AngDeg  UnknownAngleValue   = -1000.0; /*!< indicates unknown angle    */

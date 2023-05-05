@@ -8,6 +8,7 @@
 #include "utilities.h"
 #include <string>
 #include "formation.h"
+#include "strategy.h"
 
 void* stdin_callback( void * v );
 
@@ -16,6 +17,7 @@ class Player
     Formations *fm;
     WorldModel *wm;
     ActHandler *act;
+    Strategy *st;
 
     double version;
 
@@ -28,7 +30,8 @@ class Player
 
     bool isGoalie;
 public:
-    Player(WorldModel *wm, ActHandler *act, Formations *fm, string teamName, double version, MoveT moveType = OBSERVE);
+    Player(WorldModel *wm, ActHandler *act, Formations *fm, Strategy *st,
+           string teamName, double version, MoveT moveType = OBSERVE);
 
     void mainLoop();
     void doMove();
