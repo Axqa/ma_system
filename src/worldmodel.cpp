@@ -792,7 +792,15 @@ void WorldModel::predictTeammateWithStrategy(PlayerObject *player)
     VecPosition lastPos = player->getLastVision().getAbsPos();
     int lastTime = player->getLastSeeTime();
 
-    VecPosition pred = lastPos + (target - lastPos).normalize() * (getCurrentTime() - lastTime) * PLAYER_SPEED_MAX * 0.9;
+    if (lastTime % st->getTimeForTarget() != getCurrentTime() % st->getTimeForTarget())
+    {
+        int newLastTime = lastTime + (st->getTimeForTarget() - lastTime % st->getTimeForTarget());
+        lastPos = lastPos +
+                (st->getStrategyTargetForTime(player->getUnum(), lastTime) - lastPos).normalize() * (newLastTime - lastTime) * PLAYER_SPEED_MAX * 0.5;
+        lastTime = newLastTime;
+    }
+
+    VecPosition pred = lastPos + (target - lastPos).normalize() * (getCurrentTime() - lastTime) * PLAYER_SPEED_MAX * 0.5;
 
     if (vecInField(pred) == false)
     {
