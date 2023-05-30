@@ -14,46 +14,51 @@
 
 using namespace std;
 
+/*!
+    This class contains all the information about field used by agent.
+    Provides methods to update world model with new information and
+    process enw information.
+*/
 class WorldModel
 {
     pthread_mutex_t  mutex_newInfo;       /*!< mutex to protect newInfo       */
     pthread_cond_t   cond_newInfo;        /*!< cond variable for newInfo      */
 
-    Formations *fm;
-    PlayerMapper *pm;
-    Strategy *st;
+    Formations *fm;     /*!< reference to formation used */
+    PlayerMapper *pm;   /*!< reference to player mappping algorithm used */
+    Strategy *st;       /*!< reference to team strategy used */
 
-    string teamName;
+    string teamName;    /*!< Team name */
 
-    Agent agent;
+    Agent agent;        /*!< Information about agent */
 
-    PlayerObject teammates[MAX_TEAMMATES];
-    PlayerObject opponents[MAX_OPPONENTS];
-
+    PlayerObject teammates[MAX_TEAMMATES];  /*!< informations about teammates */
+    PlayerObject opponents[MAX_OPPONENTS];  /*!< informations about opponents */
 
     PlayerObject unknownPlayers[MAX_TEAMMATES + MAX_OPPONENTS];
+                                            /*!< info about players seen last cycle */
 
-    FixedObject flags[MAX_FLAGS];
-    FixedObject lines[MAX_LINES];
+    FixedObject flags[MAX_FLAGS];   /*!< information about flags and last vision */
+    FixedObject lines[MAX_LINES];   /*!< information about lines and last vision */
 
-    list<FixedObject> viewedFlags;
+    list<FixedObject> viewedFlags;  /*!< info about flags viewed last cycle */
 
-    int unknownCount;
+    int unknownCount;   /*!< number of seen players last cycle */
 
-    int agentNum;
-    SideT side;
+    int agentNum;       /*!< agent's team number */
+    SideT side;         /*!< agent's team side */
 
-    PlayModeT playMode;
+    PlayModeT playMode; /*!< current play mode */
 
-    char    lastSeeMsg[MAX_MSG];
-    int     lastSeeTime;
-    bool    newSeeInfo;
-    char    lastSenseMsg[MAX_MSG];
-    int     lastSenseTime;
-    bool    newSenseInfo;
-    bool    newInfo;
+    char    lastSeeMsg[MAX_MSG];    /*!< see message for agent */
+    int     lastSeeTime;            /*!< cycle for last see message */
+    bool    newSeeInfo;             /*!< indicates whether new see info received */
+    char    lastSenseMsg[MAX_MSG];  /*!< sense message for agent */
+    int     lastSenseTime;          /*!< cycle for last sense message */
+    bool    newSenseInfo;           /*!< indicates whether new sense info received */
+    bool    newInfo;                /*!< indicates whether new info available */
 
-    std::ostringstream extraInfo;
+    std::ostringstream extraInfo;   /*!< buffer for extra info */
 public:
     WorldModel(Formations *fm, PlayerMapper* pm, Strategy *st);
 

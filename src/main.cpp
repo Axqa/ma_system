@@ -61,6 +61,9 @@ int main(int argc, char * argv[])
             case 's':
                 strategyFile = string(argv[i+1]);
                 break;
+            case 'c':
+                confFile = string(argv[i+1]);
+                break;
             case 'i':
                 useInput = atoi(argv[i+1]) == 1 ? true : false;
                 break;
@@ -174,6 +177,7 @@ void printOptions()
             "-[n]um                 - player number \n" <<
             "-[l]og                 - log file \n" <<
             "-[s]trategy            - strategy file \n" <<
+            "-[c]onfig              - config file \n" <<
             "-[i]nput               - enable input from console\n" <<
             "-[m]oveType            - agent move type, 0 - observe, 1 - random line\n" << endl;
 }

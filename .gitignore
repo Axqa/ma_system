@@ -16,3 +16,19 @@ build/Makefile
 build/CMakeFiles/player.dir/link.txt
 
 *.cmake
+
+build/CMakeFiles/progress.marks
+
+build/CMakeFiles/Makefile2
+
+configs/
+
+build/CMakeFiles/TargetDirectories.txt
+
+build/CMakeFiles/starter.dir/compiler_depend.ts
+
+logs/
+
+server_logs/
+
+build/CMakeFiles/starter.dir/link.txt

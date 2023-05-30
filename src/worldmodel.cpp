@@ -332,6 +332,11 @@ bool WorldModel::clearInfo()
     return true;
 }
 
+/*!
+ * This method updates information with see and sense messages.
+ * @param needMap is mapping needed
+ * @return is updating successful
+*/
 bool WorldModel::update(bool needMap)
 {
     clearInfo();
@@ -360,10 +365,7 @@ bool WorldModel::update(bool needMap)
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
-//            std::cout << "Time: " << duration.count() << " mcs" << std::endl;
-
-            Log.getOutputStream() << "Time for mapping: " << duration.count() << " mcs" << endl;
-
+            Log.log(4, "Time for mapping: %d mcs", duration.count());
             show(Log.getOutputStream());
         }
     }
@@ -451,7 +453,7 @@ bool WorldModel::processLastSeeMsg()
         Parse::gotoFirstOccurenceOf( ')', &str );
         str++;
 
-        // process the parsed information (unread values are Unknown...)
+        // process the parsed information
         if (SoccerTypes::isFlag(o))
         {
             processFlagInfo(o, time, dDist, iDir);
@@ -611,6 +613,10 @@ bool WorldModel::calculateAllPos(bool needUpdateOther)
     Log.log(2, "End WorldModel::calculateAllPos");
 }
 
+/*!
+ * This method calculate agent angle and position
+ * @return is success
+*/
 bool WorldModel::calculateAgentPos()
 {
     Log.log(2, "Start WorldModel::calculateAgentPos");
@@ -627,7 +633,6 @@ bool WorldModel::calculateAgentPos()
         }
     }
 
-//    for(auto curFlag : viewedFlags)
     for (int i = 0; i < MAX_FLAGS; ++i)
     {
         curFlag = &flags[i];
@@ -655,17 +660,13 @@ bool WorldModel::calculateAgentPos()
     agent.setAbsPos(agentPos);
 
     agent.setAbsBodyAngle(globalNeckAngle + agent.getNeckToBodyAngle());
-//    extraInfo.str(std::string());
-//    extraInfo.clear();
 
-//    char lName[10], fName[10] ;
-//    SoccerTypes::getObjectStr(lName, line->getType(), getTeamName().data());
-//    SoccerTypes::getObjectStr(fName, flag->getType(), getTeamName().data());
-//    extraInfo <<
-//            "line: " << lName << " " << line->getType() << "\n | relAngle: " << relAngleLine << '\n' <<
-//            "flag: " << fName << " " << flag->getType() << "\n | pos: " << flag->getGlobalPos(getSide()) << "\n | relPos: " << flag->getRelPos() <<
-//            "\n | absAngle: " << absPolarFlagAngle <<
-//            "\n | relPos: " << VecPosition::getVecPositionFromPolar(flag->getRelPos().getX(), absPolarFlagAngle) << '\n' << endl;
+    VisiblePlayer vp;
+    vp.setTime(getCurrentTime());
+    vp.setAbsPos(agentPos);
+    vp.setUnumConf(1);
+    vp.setTeamConf(1);
+    teammates[agent.getUnum()-1].addVision(vp);
 
     Log.log(2, "End WorldModel::calculateAgentPos");
 
@@ -711,7 +712,12 @@ bool WorldModel::mapUnknownPlayers()
     return pm->mapInGame(unknownCount);
 }
 
-// returns pair <slope, intercept>
+/*!
+ * Function to calculate linear regression coefficients
+ * @param x vector of x values
+ * @param y vector of y values
+ * @return pair <slope, intercept>
+*/
 pair<double, double> linear_regression(vector<double>& x, vector<double>& y) {
     int n = x.size();
     double sum_x = accumulate(x.begin(), x.end(), 0.0);
@@ -733,6 +739,11 @@ pair<double, double> linear_regression(vector<double>& x, vector<double>& y) {
     return {slope, intercept};
 }
 
+/*!
+ * Method updates player's predicted position
+ * determine predict type
+ * @return is success
+*/
 bool WorldModel::updatePredictions()
 {
     vector<double> xs, ys, ts;
@@ -757,6 +768,9 @@ bool WorldModel::updatePredictions()
     return true;
 }
 
+/*!
+ * Method for evaluation predicted pos with least squares method
+*/
 void WorldModel::calcPrediction(PlayerObject *player)
 {
     vector<double> xs, ys, ts;
@@ -781,13 +795,12 @@ void WorldModel::calcPrediction(PlayerObject *player)
                                 yCoef.first * getCurrentTime() + yCoef.second));
 }
 
+/*!
+ * Method for prediction with team strategy
+*/
 void WorldModel::predictTeammateWithStrategy(PlayerObject *player)
 {
     VecPosition target = st->getStrategyTargetForTime(player->getUnum(), getCurrentTime());
-//    VecPosition prevTarget = (getCurrentTime() < st->getTimeForTarget()) ?
-//                fm->getPlayerPos(player->getUnum()) :
-//                st->getStrategyTargetForTime(player->getUnum(), getCurrentTime() - st->getTimeForTarget());
-
 
     VecPosition lastPos = player->getLastVision().getAbsPos();
     int lastTime = player->getLastSeeTime();

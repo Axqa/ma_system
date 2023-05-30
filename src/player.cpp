@@ -14,6 +14,9 @@ void* stdin_callback( void * v )
   return 0;
 }
 
+/*!
+ *
+*/
 Player::Player(WorldModel *wm, ActHandler *act, Formations *fm, Strategy *st, string teamName, double version, MoveT moveType)
     : fm(fm), wm(wm), act(act), st(st), version(version), alive(true), moveType(moveType)
 {
@@ -29,6 +32,10 @@ Player::Player(WorldModel *wm, ActHandler *act, Formations *fm, Strategy *st, st
     isGoalie = fm->getPlayerNum() == 1;
 }
 
+/*!
+ *  Main loop for agent. Waits for new info, updates world model and
+ *  determines movement for player.
+*/
 void Player::mainLoop()
 {
     if(  wm->waitNewInfo() == false )
@@ -36,9 +43,8 @@ void Player::mainLoop()
 
     while (alive)
     {
-        if (/*wm->getNewInfo() &&*/ wm->update(moveType==OBSERVE || moveType==NO_MOVE_OBSERVE))
+        if ( wm->update(moveType==OBSERVE || moveType==NO_MOVE_OBSERVE))
         {
-//            wm->setNewInfo(false);
 
             if (wm->getPlayMode() == PM_BEFORE_KICK_OFF)
             {
@@ -117,6 +123,9 @@ void Player::mainLoop()
     }
 }
 
+/*!
+ * This method determines player move depending player's move type
+*/
 void Player::doMove()
 {
     switch (moveType)
@@ -137,6 +146,9 @@ void Player::doMove()
     }
 }
 
+/*!
+ * Moving for running agents
+*/
 void Player::LineMover()
 {
     if (wm->getAgent().getViewAngle() != VA_NARROW)
@@ -150,10 +162,7 @@ void Player::LineMover()
         act->sendTurnNeckCmd(wm->getAgent().getNeckToBodyAngle());
         return;
     }
-//    if (target == VecPosition() || target.getDistanceTo(wm->getAgent().getAbsPos()) < 10)
-//    {
-//        target = VecPosition((rand() % (int)PITCH_LENGTH) - (int)PITCH_LENGTH/2, (rand() % (int)PITCH_WIDTH) - (int)PITCH_WIDTH/2);
-//    }
+
     target = st->getStrategyTargetForTime(wm->getAgent().getUnum(), wm->getCurrentTime());
 
     // We do not turning neck, so global neck angle == global body angle
@@ -170,34 +179,12 @@ void Player::LineMover()
     return;
 }
 
+/*!
+ * Moving for observer
+*/
 void Player::observeMover()
 {
     static bool lookRight = false;
-//    static int curAngle = 0;
-//    AngDeg absTargetAngle;
-
-////    absTargetAngle = getBisectorTwoAngles()
-//    FixedObject *line = nullptr;
-//    for(int i = 0; i < MAX_LINES; ++i)
-//    {
-//        // we dont move so line info should be same for all time
-//        if (wm->getLines()[i].getTime() != -1 && (line == nullptr || (wm->getLines()[i].getRelPos().getX() < line->getRelPos().getX())))
-//        {
-//            line = &wm->getLines()[i];
-//        }
-//    }
-
-//    absTargetAngle = SoccerTypes::getGlobalAngleLine(line->getType(), wm->getSide());
-
-//    AngDeg viewAngle = SoccerTypes::getHalfViewAngleValue(wm->getAgent().getViewAngle()) * 2;
-
-//    if (!equal(wm->getAgent().getAbsBodyAngle(), absTargetAngle))
-//    {
-//        act->sendTurnCmd(absTargetAngle - wm->getAgent().getAbsBodyAngle());
-//        return;
-//    }
-
-
 
     if (equal(wm->getAgent().getNeckToBodyAngle(), 0) )
     {
@@ -215,7 +202,6 @@ void Player::observeMover()
         act->sendTurnNeckCmd(180);
         lookRight = true;
     }
-
 }
 
 void Player::handleStdin()

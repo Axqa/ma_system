@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(PROJ_NAME player)
+set(STARTER_NAME starter)
 
 set(SOURCES
   src/parser.cpp
@@ -42,8 +43,17 @@ set(OTHER
     formations.conf
     )
 
+set(STARTER_SRC
+  src/connection.cpp
+  src/connection.h
+  src/logger.cpp
+  src/logger.h
+  )
 
 file(COPY ${OTHER} DESTINATION ".")
 set(MAIN src/main.cpp)
 
+set(STARTER_MAIN src/starter.cpp)
+
 add_executable(${PROJ_NAME} ${MAIN} ${SOURCES})
+add_executable(${STARTER_NAME} ${STARTER_MAIN} ${STARTER_SRC})

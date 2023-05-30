@@ -9,8 +9,9 @@ MODE="1"
 INPUT="0"
 AGENT_NUM="-1"
 LOG_FILE=""
+CONF_FILE=""
 
-while getopts "h:p:v:b:t:a:l:" flag; do
+while getopts "h:p:v:b:t:a:l:c:i:" flag; do
 	case "$flag" in
 	h) HOST=$OPTARG ;;
 	p) PORT=$OPTARG ;;
@@ -19,6 +20,8 @@ while getopts "h:p:v:b:t:a:l:" flag; do
 	t) TEAM_NAME=$OPTARG ;;
 	a) AGENT_NUM=$OPTARG ;;
 	l) LOG_FILE=$OPTARG ;;
+	c) CONF_FILE=$OPTARG ;;
+	i) INPUT=$OPTARG ;;
 	esac
 done
 
@@ -32,7 +35,11 @@ N_PARAM="-teamname $TEAM_NAME -host $HOST -port $PORT -input $INPUT"
 A_PARAM="$N_PARAM"
 
 if [ "$LOG_FILE" != "" ]; then
-	A_PARAM="$A_PARAM -log $LOG_FILE -input 1"
+	A_PARAM="$A_PARAM -log $LOG_FILE "
+fi
+
+if [ "$CONF_FILE" != "" ]; then
+	A_PARAM="$A_PARAM -conf $CONF_FILE "
 fi
 
 N_PARAM="$N_PARAM -mode $MODE"
@@ -51,12 +58,17 @@ while [ $i -le 11 ]; do
 done
 
 if [ "$AGENT_NUM" != "-1" ]; then
-	# Запускаем tmux для создания окна, в котором будем вводить строки
-	tmux new-session -d -s my_session "./build/player $A_PARAM -num $AGENT_NUM"
+	if [  "$INPUT" == "1" ]; then
+		# Запускаем tmux для создания окна, в котором будем вводить строки
+		tmux new-session -d -s my_session "./build/player $A_PARAM -num $AGENT_NUM"
 
 
-	# Подключаемся к tmux окну и вводим строки
-	tmux attach-session -t my_session
+		# Подключаемся к tmux окну и вводим строки
+		tmux attach-session -t my_session
+	else
+		echo $CLIENT $A_PARAM -num $AGENT_NUM
+		$CLIENT $A_PARAM -num $AGENT_NUM &
+	fi
 fi
 
 sleep 3

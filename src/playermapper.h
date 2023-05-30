@@ -9,25 +9,28 @@
 #include <vector>
 #include <list>
 
+/*!<
+    Basic class for mapping algorithm
+*/
 class PlayerMapper
 {
 protected:
 
-    Formations *fm;
+    Formations *fm;     /*!< reference to formation info */
 
-    Agent *agent;
+    Agent *agent;       /*!< reference to agent object */
 
-    PlayerObject *teammates;
-    PlayerObject *opponents;
+    PlayerObject *teammates;    /*!< reference to list of teammates */
+    PlayerObject *opponents;    /*!< reference to list of opponents */
 
-    PlayerObject *unknownPlayers;
+    PlayerObject *unknownPlayers;   /*!< reference to list of unmapped players */
 
     // pair <player, unknownPlayer>
     vector<pair<PlayerObject*, PlayerObject*>> mapTo;
+                                /*!< array of mapped players */
+    SideT agentSide;    /*!< side of agent */
 
-    SideT agentSide;
-
-    int curTime;
+    int curTime;        /*!< current cycle */
 public:
     PlayerMapper();
 
@@ -66,14 +69,17 @@ protected:
     double confFromDist(double dist);
 };
 
+/*!
+    Class ClosestMapper implement mapping to closest.
+*/
 class ClosestMapper : public PlayerMapper
 {
 protected:
 
 
-    list<PlayerObject*> listUnsureAll;
-    list<PlayerObject*> listUnsureTeammates;
-    list<PlayerObject*> listUnsureOpponents;
+    list<PlayerObject*> listUnsureAll;          /*!< list for unknown both team and unum */
+    list<PlayerObject*> listUnsureTeammates;    /*!< list for unknown unum and teammate */
+    list<PlayerObject*> listUnsureOpponents;    /*!< list for unknown unum and opponent */
 public:
     ClosestMapper();
     bool   mapInGame(int unknownCount) override;
@@ -88,42 +94,48 @@ protected:
     bool   mapToClosestFromAll(PlayerObject *player, PlayerObject* arr, int count);
 };
 
-
+/*!
+     Class MinSumMapper implements mapping algorithm for findind
+     minimal sum of distances from last position to seen player
+*/
 class MinSumMapper : public PlayerMapper
 {
 protected:
+    /*!< Represents player in finding algorithm */
     struct PlayerToMap
     {
-        PlayerObject *player;
-        VecPosition pos;
-        bool unmapped;
-        int unknownIndex;
+        PlayerObject *player;   /*!< reference to known player */
+        VecPosition pos;        /*!< position of player */
+        bool unmapped;          /*!< is player mapped in current step */
+        int unknownIndex;       /*!< index of unknown player to map */
     };
+    /*!< Represent possible player for unknown  */
     struct PossiblePlayer
     {
-        PlayerToMap *ptm;
-        double dist;
-        double sumDist;
+        PlayerToMap *ptm;       /*!< reference to player info */
+        double dist;            /*!< distance for current pair */
+        double sumDist;         /*!< distance for current combination */
     };
+    /*!< Represent seen player in algorithm */
     struct Unknown
     {
-        PlayerObject *player;
-        vector<PossiblePlayer> possibleTargets;
-        int curPossible;
-        PossiblePlayer *minPossible;
-        PossiblePlayer *globalMinPossible;
-        double sumLeft;
-        double sumRight;
+        PlayerObject *player;   /*!< reference to unknown player */
+        vector<PossiblePlayer> possibleTargets; /*!< array of possible known players */
+        int curPossible;        /*!< possible index in current step */
+        PossiblePlayer *minPossible;        /*!< reference to minimal posssible for step */
+        PossiblePlayer *globalMinPossible;  /*!< reference to minimal possible for cycle */
+        double sumLeft;         /*!< distance for pair in left team */
+        double sumRight;        /*!< distance for pair in right team */
     };
 
-    vector<Unknown> unknowns;
-    vector<PlayerToMap> unmappedPlayers;
+    vector<Unknown> unknowns;           /*!< array of seen players */
+    vector<PlayerToMap> unmappedPlayers;/*!< array of unmapped known players */
 
-    double sumDist;
+    double sumDist;     /*!< result distance */
 protected:
-    vector<PlayerObject> unsureAll;
-    vector<PlayerObject> unsureTeammates;
-    vector<PlayerObject> unsureOpponents;
+    vector<PlayerObject> unsureAll;         /*!< array for unknown both team and unum */
+    vector<PlayerObject> unsureTeammates;   /*!< array for unknown unum and teammate */
+    vector<PlayerObject> unsureOpponents;   /*!< array for unknown unum and opponent */
 public:
     MinSumMapper();
     bool   mapInGame(int unknownCount) override;
@@ -139,6 +151,9 @@ protected:
     double mapOne(int curUnknown);
 };
 
+/*!<
+    Class implements mapping to closest predict position.
+*/
 class ClosestPredictMapper : public ClosestMapper
 {
 public:
@@ -147,6 +162,11 @@ protected:
     VecPosition getPos(PlayerObject& player) override;
 };
 
+/*!<
+    Class implements mapping algorithm for findind
+    minimal sum of distances from predicted position
+    to seen player.
+*/
 class MinSumPredictMapper : public MinSumMapper
 {
 protected:
